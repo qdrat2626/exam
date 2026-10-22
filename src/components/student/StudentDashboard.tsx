@@ -10,8 +10,24 @@ import {
   Sparkles,
   ArrowLeft,
   Search,
-  BookOpen
+  BookOpen,
+  TrendingUp,
+  BarChart3,
+  Target,
+  Activity,
+  History
 } from 'lucide-react';
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid
+} from 'recharts';
 
 interface StudentDashboardProps {
   currentUser: User;
@@ -29,17 +45,21 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   onViewResult
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [chartType, setChartType] = useState<'area' | 'bar'>('area');
 
-  // Map submissions by examId for this user
-  const userSubmissionsByExam: Record<string, Submission> = {};
-  submissions
+  // Filter submissions by currentUser and sort chronologically
+  const userSubmissions = submissions
     .filter((s) => s.userId === currentUser.id)
-    .forEach((s) => {
-      // Keep most recent or highest
-      if (!userSubmissionsByExam[s.examId] || new Date(s.submittedAt) > new Date(userSubmissionsByExam[s.examId].submittedAt)) {
-        userSubmissionsByExam[s.examId] = s;
-      }
-    });
+    .sort((a, b) => new Date(a.submittedAt).getTime() - new Date(b.submittedAt).getTime());
+
+  // Map submissions by examId for quick status lookup
+  const userSubmissionsByExam: Record<string, Submission> = {};
+  userSubmissions.forEach((s) => {
+    // Keep most recent
+    if (!userSubmissionsByExam[s.examId] || new Date(s.submittedAt) > new Date(userSubmissionsByExam[s.examId].submittedAt)) {
+      userSubmissionsByExam[s.examId] = s;
+    }
+  });
 
   // Active exams only for students
   const filteredExams = exams.filter((e) => {
@@ -57,6 +77,81 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
     userScores.length > 0
       ? Math.round(userScores.reduce((acc, curr) => acc + curr.percentage, 0) / userScores.length)
       : 0;
+
+  const highestScore =
+    userScores.length > 0
+      ? Math.max(...userScores.map((s) => s.percentage))
+      : 0;
+
+  const passedCount = userScores.filter((s) => s.percentage >= 50).length;
+  const passRate = userScores.length > 0 ? Math.round((passedCount / userScores.length) * 100) : 0;
+
+  // Chart data formatting
+  const chartData = userSubmissions.map((s, index) => {
+    const dateObj = new Date(s.submittedAt);
+    const dateLabel = isNaN(dateObj.getTime())
+      ? `محاولة ${index + 1}`
+      : dateObj.toLocaleDateString('ar-EG', { month: 'numeric', day: 'numeric' });
+    const timeLabel = isNaN(dateObj.getTime())
+      ? ''
+      : dateObj.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+
+    const shortTitle = s.examTitle.length > 14 ? `${s.examTitle.substring(0, 14)}...` : s.examTitle;
+
+    return {
+      index: index + 1,
+      attemptNumber: `اختبار #${index + 1}`,
+      name: shortTitle,
+      fullTitle: s.examTitle,
+      percentage: Math.round(s.percentage),
+      score: s.score,
+      maxScore: s.maxScore,
+      date: dateLabel,
+      time: timeLabel,
+      timeSpentMin: Math.max(1, Math.round((s.timeSpentSeconds || 0) / 60))
+    };
+  });
+
+  // Custom RTL Tooltip for Recharts
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div className="bg-white p-3.5 rounded-2xl border-2 border-b-4 border-slate-200 shadow-xl text-right min-w-[200px] z-50">
+          <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2 mb-2">
+            <span className="text-xs font-black text-slate-800">{data.fullTitle}</span>
+            <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md">
+              {data.attemptNumber}
+            </span>
+          </div>
+
+          <div className="space-y-1.5 text-xs font-bold text-slate-600">
+            <div className="flex items-center justify-between">
+              <span className="text-slate-400 font-semibold">النسبة المئوية:</span>
+              <span className="font-black text-[#58cc02] text-sm">{data.percentage}%</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-slate-400 font-semibold">الدرجة المحصلة:</span>
+              <span className="font-black text-slate-800">
+                {data.score} / {data.maxScore}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-slate-400 font-semibold">تاريخ الإجراء:</span>
+              <span className="text-slate-500 font-medium">
+                {data.date} {data.time && `(${data.time})`}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-slate-400 font-semibold">الوقت المستغرق:</span>
+              <span className="text-slate-500 font-medium">{data.timeSpentMin} دقيقة تقريباً</span>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
@@ -82,17 +177,194 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
           </div>
 
           {/* Quick Stats Pill */}
-          <div className="flex items-center gap-3 w-full sm:w-auto justify-center">
-            <div className="p-3.5 px-5 rounded-2xl border-2 border-b-4 border-slate-200 bg-slate-50 text-center">
-              <span className="text-xs font-bold text-slate-400 block">المكتمل</span>
-              <span className="text-xl font-black text-slate-800">{completedCount}</span>
+          <div className="grid grid-cols-2 sm:flex items-center gap-2.5 w-full sm:w-auto">
+            <div className="p-3 sm:px-4 rounded-2xl border-2 border-b-4 border-slate-200 bg-slate-50 text-center">
+              <span className="text-[11px] font-bold text-slate-400 block">المكتمل</span>
+              <span className="text-lg sm:text-xl font-black text-slate-800">{completedCount}</span>
             </div>
-            <div className="p-3.5 px-5 rounded-2xl border-2 border-b-4 border-slate-200 bg-slate-50 text-center">
-              <span className="text-xs font-bold text-slate-400 block">متوسط الدرجات</span>
-              <span className="text-xl font-black text-[#58cc02]">{averagePercentage}%</span>
+            <div className="p-3 sm:px-4 rounded-2xl border-2 border-b-4 border-slate-200 bg-slate-50 text-center">
+              <span className="text-[11px] font-bold text-slate-400 block">المتوسط</span>
+              <span className="text-lg sm:text-xl font-black text-[#58cc02]">{averagePercentage}%</span>
+            </div>
+            <div className="p-3 sm:px-4 rounded-2xl border-2 border-b-4 border-slate-200 bg-slate-50 text-center">
+              <span className="text-[11px] font-bold text-slate-400 block">أعلى نسبة</span>
+              <span className="text-lg sm:text-xl font-black text-[#1cb0f6]">{highestScore}%</span>
+            </div>
+            <div className="p-3 sm:px-4 rounded-2xl border-2 border-b-4 border-slate-200 bg-slate-50 text-center">
+              <span className="text-[11px] font-bold text-slate-400 block">نسبة الاجتياز</span>
+              <span className="text-lg sm:text-xl font-black text-emerald-600">{passRate}%</span>
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Recharts Analytics Section: Past Test Performance */}
+      <div className="duo-card p-6 bg-white relative overflow-hidden space-y-5">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-[#58cc02]/10 border-2 border-[#58cc02]/30 flex items-center justify-center text-[#58cc02]">
+              <TrendingUp className="w-5 h-5 stroke-[2.5]" />
+            </div>
+            <div>
+              <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
+                مؤشرات التحصيل وإحصائيات الأداء التفاعلية
+              </h2>
+              <p className="text-xs font-bold text-slate-400">
+                رسم بياني يوضح تطور مستواك ومقارنة نتائجك عبر الاختبارات السابقة
+              </p>
+            </div>
+          </div>
+
+          {/* Toggle Area vs Bar Chart */}
+          {userSubmissions.length > 0 && (
+            <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl border border-slate-200 self-stretch sm:self-auto justify-center">
+              <button
+                type="button"
+                onClick={() => {
+                  soundFX.playPop();
+                  setChartType('area');
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                  chartType === 'area'
+                    ? 'bg-white text-[#58cc02] shadow-sm border border-slate-200'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <Activity className="w-3.5 h-3.5" />
+                <span>منحنى التطور (%)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  soundFX.playPop();
+                  setChartType('bar');
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                  chartType === 'bar'
+                    ? 'bg-white text-[#1cb0f6] shadow-sm border border-slate-200'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <BarChart3 className="w-3.5 h-3.5" />
+                <span>مقارنة الدرجات</span>
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Chart Content Area */}
+        {userSubmissions.length === 0 ? (
+          <div className="py-12 px-4 text-center bg-slate-50/70 rounded-2xl border-2 border-dashed border-slate-200">
+            <div className="w-14 h-14 rounded-2xl bg-slate-200/60 flex items-center justify-center text-slate-400 mx-auto mb-3">
+              <Target className="w-7 h-7" />
+            </div>
+            <h3 className="text-sm font-black text-slate-700">لم تقم بإجراء أي اختبار حتى الآن</h3>
+            <p className="text-xs font-bold text-slate-400 max-w-md mx-auto mt-1">
+              بمجرد إنهائك لأول اختبار مقرر عليك، سيتم تسجيل نتائجك هنا وعرض رسوم بيانية تفاعلية لقياس مستوى تطورك ودرجاتك.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="w-full h-64 sm:h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                {chartType === 'area' ? (
+                  <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="scoreGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#58cc02" stopOpacity={0.4} />
+                        <stop offset="95%" stopColor="#58cc02" stopOpacity={0.0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fill: '#64748b', fontSize: 11, fontWeight: 700 }}
+                      axisLine={{ stroke: '#e2e8f0' }}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      domain={[0, 100]}
+                      ticks={[0, 25, 50, 75, 100]}
+                      tick={{ fill: '#64748b', fontSize: 11, fontWeight: 700 }}
+                      axisLine={false}
+                      tickLine={false}
+                      unit="%"
+                    />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Area
+                      type="monotone"
+                      dataKey="percentage"
+                      name="النسبة"
+                      stroke="#58cc02"
+                      strokeWidth={3.5}
+                      fillOpacity={1}
+                      fill="url(#scoreGradient)"
+                      activeDot={{ r: 6, fill: '#58cc02', stroke: '#ffffff', strokeWidth: 2 }}
+                    />
+                  </AreaChart>
+                ) : (
+                  <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fill: '#64748b', fontSize: 11, fontWeight: 700 }}
+                      axisLine={{ stroke: '#e2e8f0' }}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tick={{ fill: '#64748b', fontSize: 11, fontWeight: 700 }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Bar
+                      dataKey="maxScore"
+                      name="الدرجة القصوى"
+                      fill="#e2e8f0"
+                      radius={[6, 6, 0, 0]}
+                      maxBarSize={32}
+                    />
+                    <Bar
+                      dataKey="score"
+                      name="درجتك"
+                      fill="#1cb0f6"
+                      radius={[6, 6, 0, 0]}
+                      maxBarSize={32}
+                    />
+                  </BarChart>
+                )}
+              </ResponsiveContainer>
+            </div>
+
+            {/* Quick Chart Legend & Insights footer */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100 text-xs font-bold text-slate-500">
+              <div className="flex items-center gap-4">
+                {chartType === 'area' ? (
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-full bg-[#58cc02] inline-block"></span>
+                    <span>النسبة المئوية المحرزة في المحاولة</span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-3 h-3 rounded-sm bg-[#1cb0f6] inline-block"></span>
+                      <span>الدرجة الفعلية المحققة</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-3 h-3 rounded-sm bg-slate-200 inline-block"></span>
+                      <span>الدرجة الكلية للاختبار</span>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div className="inline-flex items-center gap-1 text-[11px] text-slate-400">
+                <History className="w-3.5 h-3.5" />
+                <span>إجمالي المحاولات المسجلة: {userSubmissions.length}</span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Search and Section Header */}

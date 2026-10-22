@@ -38,6 +38,10 @@ export const ExamTakingSession: React.FC<ExamTakingSessionProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [showReviewConfirm, setShowReviewConfirm] = useState(false);
+  const [dismissWarning, setDismissWarning] = useState(false);
+
+  const totalDurationSeconds = exam.isUnlimitedTime ? null : (exam.durationMinutes || 20) * 60;
+  const warningSoundPlayedRef = useRef(false);
 
   const startTimeRef = useRef<number>(Date.now());
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -55,6 +59,13 @@ export const ExamTakingSession: React.FC<ExamTakingSessionProps> = ({
             handleAutoSubmitOnTimeout();
             return 0;
           }
+
+          // Trigger warning sound once when approaching end (<= 120 seconds)
+          if (prev <= 120 && !warningSoundPlayedRef.current) {
+            warningSoundPlayedRef.current = true;
+            soundFX.playError();
+          }
+
           return prev - 1;
         });
       }
@@ -235,22 +246,75 @@ export const ExamTakingSession: React.FC<ExamTakingSessionProps> = ({
             </div>
           </div>
 
-          {/* Timer Display */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-slate-50">
-            <Clock className={`w-4 h-4 ${remainingSeconds !== null && remainingSeconds < 120 ? 'text-[#ff4b4b] animate-pulse' : 'text-slate-500'}`} />
-            {remainingSeconds !== null ? (
-              <span
-                className={`text-xs font-black font-mono ${
-                  remainingSeconds < 120 ? 'text-[#ff4b4b]' : 'text-slate-700'
-                }`}
-              >
-                {Math.floor(remainingSeconds / 60)}:
-                {String(remainingSeconds % 60).padStart(2, '0')}
-              </span>
-            ) : (
-              <span className="text-xs font-black text-[#58cc02]">مفتوح</span>
-            )}
-          </div>
+          {/* Visual Circular Countdown Timer */}
+          {remainingSeconds !== null ? (
+            <div
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-2xl border-2 border-b-4 transition-all shadow-xs ${
+                remainingSeconds < 60
+                  ? 'border-[#ff4b4b] bg-red-50 text-red-700 animate-pulse'
+                  : remainingSeconds < 180
+                  ? 'border-[#ff9600] bg-amber-50 text-amber-800'
+                  : 'border-slate-200 bg-white text-slate-700'
+              }`}
+            >
+              {/* Circular Progress Gauge */}
+              <div className="relative w-7 h-7 flex items-center justify-center shrink-0">
+                <svg className="w-7 h-7 -rotate-90" viewBox="0 0 32 32">
+                  <circle
+                    cx="16"
+                    cy="16"
+                    r="12"
+                    fill="none"
+                    stroke="#e2e8f0"
+                    strokeWidth="3"
+                  />
+                  <circle
+                    cx="16"
+                    cy="16"
+                    r="12"
+                    fill="none"
+                    stroke={
+                      remainingSeconds < 60
+                        ? '#ff4b4b'
+                        : remainingSeconds < 180
+                        ? '#ff9600'
+                        : '#58cc02'
+                    }
+                    strokeWidth="3"
+                    strokeDasharray={75.4}
+                    strokeDashoffset={
+                      totalDurationSeconds
+                        ? 75.4 * (1 - Math.max(0, remainingSeconds) / totalDurationSeconds)
+                        : 0
+                    }
+                    strokeLinecap="round"
+                    className="transition-all duration-1000 ease-linear"
+                  />
+                </svg>
+                <Clock
+                  className={`w-3.5 h-3.5 absolute ${
+                    remainingSeconds < 60 ? 'text-[#ff4b4b]' : remainingSeconds < 180 ? 'text-[#ff9600]' : 'text-slate-500'
+                  }`}
+                />
+              </div>
+
+              {/* Digits & Badge */}
+              <div className="text-right">
+                <span className="text-[10px] font-bold text-slate-400 block leading-none">
+                  {remainingSeconds < 60 ? 'الوقت ينفد!' : 'الوقت المتبقي'}
+                </span>
+                <span className="text-xs font-black font-mono leading-tight">
+                  {Math.floor(remainingSeconds / 60)}:
+                  {String(remainingSeconds % 60).padStart(2, '0')}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-slate-50">
+              <Clock className="w-4 h-4 text-[#58cc02]" />
+              <span className="text-xs font-black text-[#58cc02]">وقت مفتوح</span>
+            </div>
+          )}
         </div>
       </header>
 
@@ -258,6 +322,46 @@ export const ExamTakingSession: React.FC<ExamTakingSessionProps> = ({
       <main className="max-w-3xl mx-auto w-full px-3.5 sm:px-4 py-4 sm:py-8 flex-1 flex flex-col justify-start sm:justify-center overflow-y-auto">
         {currentQuestion && (
           <div className="space-y-4 sm:space-y-6">
+            {/* Nearing Expiration Alert Warning Banner */}
+            {remainingSeconds !== null && remainingSeconds <= 120 && !dismissWarning && (
+              <div
+                className={`p-3.5 sm:p-4 rounded-2xl border-2 border-b-4 flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-3 ${
+                  remainingSeconds < 60
+                    ? 'bg-red-50 border-[#ff4b4b] text-red-900 shadow-md'
+                    : 'bg-amber-50 border-[#ff9600] text-amber-900 shadow-xs'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                      remainingSeconds < 60 ? 'bg-red-100 text-[#ff4b4b] animate-bounce' : 'bg-amber-100 text-[#ff9600]'
+                    }`}
+                  >
+                    <AlertTriangle className="w-5 h-5 stroke-[2.5]" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs sm:text-sm font-black">
+                      {remainingSeconds < 60
+                        ? 'تنبيه عاجل: يتبقى أقل من دقيقة واحدة على انتهاء الاختبار!'
+                        : 'تنبيه: اقترب موعد انتهاء وقت الاختبار!'}
+                    </h4>
+                    <p className="text-[11px] sm:text-xs font-semibold opacity-90 mt-0.5">
+                      تبقى فقط {formatDurationArabic(remainingSeconds)}. سيتم حفظ إجاباتك وتسليم الاختبار تلقائياً عند انتهاء الوقت.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setDismissWarning(true)}
+                  className="p-1 rounded-lg hover:bg-black/5 text-slate-500 hover:text-slate-800 transition-all cursor-pointer shrink-0"
+                  title="إخفاء التنبيه"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
             {/* Question Meta Badge */}
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
