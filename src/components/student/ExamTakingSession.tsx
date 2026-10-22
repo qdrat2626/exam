@@ -255,31 +255,31 @@ export const ExamTakingSession: React.FC<ExamTakingSessionProps> = ({
       </header>
 
       {/* Main Question Area */}
-      <main className="max-w-3xl mx-auto w-full px-4 py-6 sm:py-10 flex-1 flex flex-col justify-center">
+      <main className="max-w-3xl mx-auto w-full px-3.5 sm:px-4 py-4 sm:py-8 flex-1 flex flex-col justify-start sm:justify-center overflow-y-auto">
         {currentQuestion && (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Question Meta Badge */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <span className="px-3 py-1 rounded-xl text-xs font-black bg-[#1cb0f6]/10 text-[#1899d6] border border-[#1cb0f6]/30">
+                <span className="px-2.5 sm:px-3 py-1 rounded-xl text-[11px] sm:text-xs font-black bg-[#1cb0f6]/10 text-[#1899d6] border border-[#1cb0f6]/30">
                   {currentQuestion.type === 'single' ? 'اختيار فردي' : 'اختيار متعدد (أكثر من إجابة)'}
                 </span>
-                <span className="px-2.5 py-1 rounded-xl text-xs font-black bg-amber-50 text-[#d4a000] border border-amber-200">
+                <span className="px-2.5 py-1 rounded-xl text-[11px] sm:text-xs font-black bg-amber-50 text-[#d4a000] border border-amber-200">
                   {currentQuestion.points} نقاط
                 </span>
               </div>
-              <div className="text-xs font-bold text-slate-400">
+              <div className="text-[11px] sm:text-xs font-bold text-slate-400">
                 الوقت المنقضي: {formatDurationArabic(timeSpent)}
               </div>
             </div>
 
             {/* Question Text */}
-            <div className="duo-card p-6 sm:p-8 bg-white shadow-xs">
-              <h2 className="text-xl sm:text-2xl font-black text-slate-800 leading-relaxed">
+            <div className="duo-card p-4 sm:p-7 bg-white shadow-xs">
+              <h2 className="text-base sm:text-xl md:text-2xl font-black text-slate-800 leading-relaxed">
                 {currentQuestion.text}
               </h2>
               {currentQuestion.type === 'multiple' && (
-                <p className="text-xs font-bold text-slate-400 mt-2 flex items-center gap-1">
+                <p className="text-[11px] sm:text-xs font-bold text-slate-400 mt-2 flex items-center gap-1">
                   <Sparkles className="w-3.5 h-3.5 text-[#ffc800]" />
                   يمكنك اختيار أكثر من إجابة صحيحة لهذا السؤال
                 </p>
@@ -287,7 +287,7 @@ export const ExamTakingSession: React.FC<ExamTakingSessionProps> = ({
             </div>
 
             {/* Options List */}
-            <div className="space-y-3">
+            <div className="space-y-2.5 sm:space-y-3">
               {currentQuestion.options.map((option, idx) => {
                 const isSelected = (selectedAnswers[currentQuestion.id] || []).includes(idx);
                 const letter = arabicLetters[idx] || String(idx + 1);
@@ -297,16 +297,16 @@ export const ExamTakingSession: React.FC<ExamTakingSessionProps> = ({
                     key={idx}
                     type="button"
                     onClick={() => handleSelectOption(idx)}
-                    className={`w-full p-4 sm:p-5 rounded-2xl border-2 border-b-4 flex items-center justify-between text-right transition-all cursor-pointer ${
+                    className={`w-full p-3.5 sm:p-5 rounded-2xl border-2 border-b-4 flex items-center justify-between text-right transition-all cursor-pointer touch-manipulation ${
                       isSelected
                         ? 'border-[#58cc02] bg-[#f2fcf0] text-slate-900 shadow-xs'
                         : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 text-slate-700'
                     }`}
                   >
-                    <div className="flex items-center gap-3.5">
+                    <div className="flex items-center gap-3 min-w-0 pr-1">
                       {/* Letter Icon Pill */}
                       <div
-                        className={`w-9 h-9 rounded-xl border-2 flex items-center justify-center font-black text-sm shrink-0 transition-all ${
+                        className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl border-2 flex items-center justify-center font-black text-xs sm:text-sm shrink-0 transition-all ${
                           isSelected
                             ? 'bg-[#58cc02] border-[#46a302] text-white shadow-xs'
                             : 'bg-slate-100 border-slate-200 text-slate-600'
@@ -314,12 +314,14 @@ export const ExamTakingSession: React.FC<ExamTakingSessionProps> = ({
                       >
                         {letter}
                       </div>
-                      <span className="font-bold text-base sm:text-lg">{option}</span>
+                      <span className="font-bold text-sm sm:text-base md:text-lg break-words text-right">
+                        {option}
+                      </span>
                     </div>
 
                     {/* Check or Radio Marker */}
                     <div
-                      className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${
+                      className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center shrink-0 mr-2 transition-all ${
                         isSelected
                           ? 'border-[#58cc02] bg-[#58cc02] text-white'
                           : 'border-slate-300 bg-white'
@@ -336,14 +338,14 @@ export const ExamTakingSession: React.FC<ExamTakingSessionProps> = ({
       </main>
 
       {/* Bottom Sticky Action Bar */}
-      <footer className="bg-white border-t-2 border-slate-200 p-4 sticky bottom-0 z-30">
-        <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
+      <footer className="bg-white/95 backdrop-blur-xs border-t-2 border-slate-200 p-3 sm:p-4 sticky bottom-0 z-30 pb-safe">
+        <div className="max-w-3xl mx-auto flex items-center justify-between gap-2.5">
           {/* Previous Button */}
           <button
             type="button"
             onClick={handlePrev}
             disabled={currentIndex === 0}
-            className="px-5 py-3 rounded-2xl duo-btn-outline font-black text-sm flex items-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl duo-btn-outline font-black text-xs sm:text-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed touch-manipulation"
           >
             <ArrowRight className="w-4 h-4 stroke-[2.5]" />
             <span>السابق</span>
@@ -381,7 +383,7 @@ export const ExamTakingSession: React.FC<ExamTakingSessionProps> = ({
             <button
               type="button"
               onClick={handleNext}
-              className="px-6 py-3 rounded-2xl duo-btn-green font-black text-sm flex items-center gap-2 cursor-pointer"
+              className="px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl duo-btn-green font-black text-xs sm:text-sm flex items-center gap-1.5 cursor-pointer touch-manipulation"
             >
               <span>التالي</span>
               <ArrowLeft className="w-4 h-4 stroke-[2.5]" />
@@ -393,7 +395,7 @@ export const ExamTakingSession: React.FC<ExamTakingSessionProps> = ({
                 soundFX.playPop();
                 setShowReviewConfirm(true);
               }}
-              className="px-6 py-3 rounded-2xl duo-btn-blue font-black text-sm flex items-center gap-2 cursor-pointer"
+              className="px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl duo-btn-blue font-black text-xs sm:text-sm flex items-center gap-1.5 cursor-pointer touch-manipulation"
             >
               <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
               <span>إنهاء وتسليم</span>

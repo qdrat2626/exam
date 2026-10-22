@@ -383,15 +383,15 @@ export const SubmissionsViewer: React.FC<SubmissionsViewerProps> = ({
 
       {/* Student Answers Inspection Modal */}
       {inspectSubmission && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-          <div className="duo-card max-w-3xl w-full bg-white p-6 sm:p-8 shadow-2xl my-8 max-h-[90vh] flex flex-col">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto touch-manipulation">
+          <div className="duo-card max-w-3xl w-full bg-white p-4 sm:p-8 shadow-2xl my-auto max-h-[88dvh] flex flex-col animate-in fade-in zoom-in-95">
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b-2 border-slate-100 pb-4 mb-4">
-              <div>
-                <h3 className="text-xl font-black text-slate-800">
+            <div className="flex items-start justify-between border-b-2 border-slate-100 pb-3 sm:pb-4 mb-3 sm:mb-4 gap-2">
+              <div className="min-w-0">
+                <h3 className="text-base sm:text-xl font-black text-slate-800 truncate">
                   تفاصيل إجابات الطالب: {inspectSubmission.userFullName}
                 </h3>
-                <p className="text-xs font-bold text-slate-500 mt-0.5">
+                <p className="text-[11px] sm:text-xs font-bold text-slate-500 mt-0.5 line-clamp-1">
                   {inspectSubmission.examTitle} • حل في{' '}
                   {formatDurationArabic(inspectSubmission.timeSpentSeconds)} • الدرجة:{' '}
                   {inspectSubmission.score} من {inspectSubmission.maxScore} (
@@ -402,9 +402,9 @@ export const SubmissionsViewer: React.FC<SubmissionsViewerProps> = ({
               <button
                 type="button"
                 onClick={() => setInspectSubmission(null)}
-                className="w-9 h-9 rounded-xl border border-slate-200 hover:bg-slate-100 flex items-center justify-center text-slate-500 cursor-pointer"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl border border-slate-200 hover:bg-slate-100 flex items-center justify-center text-slate-500 cursor-pointer shrink-0"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </div>
 

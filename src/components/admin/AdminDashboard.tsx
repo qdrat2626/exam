@@ -77,20 +77,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
       {/* Supervisor Header Banner */}
-      <div className="duo-card p-6 sm:p-8 bg-white flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-        <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-[#ff9600] border-b-4 border-[#cf7800] flex items-center justify-center text-white shadow-xs shrink-0">
-            <Layers className="w-9 h-9 stroke-[2.5]" />
+      <div className="duo-card p-4 sm:p-8 bg-white/95 backdrop-blur-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sm:gap-6 shadow-sm">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-[#ff9600] border-b-4 border-[#cf7800] flex items-center justify-center text-white shadow-xs shrink-0">
+            <Layers className="w-6 h-6 sm:w-9 sm:h-9 stroke-[2.5]" />
           </div>
           <div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-xs font-black text-[#cf7800] border border-amber-200 mb-1">
+            <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full bg-amber-50 text-[11px] sm:text-xs font-black text-[#cf7800] border border-amber-200 mb-1">
               <Sparkles className="w-3.5 h-3.5" />
               لوحة تحكم المشرف
             </div>
-            <h1 className="text-xl sm:text-2xl font-black text-slate-800">
+            <h1 className="text-lg sm:text-2xl font-black text-slate-800 leading-snug">
               أهلاً بك يا مشرف المنصة ({currentUser.fullName})
             </h1>
-            <p className="text-xs sm:text-sm font-semibold text-slate-500">
+            <p className="text-[11px] sm:text-xs md:text-sm font-semibold text-slate-500">
               إدارة الاختبارات والأسئلة عبر ملفات JSON، متابعة المختبرين وأوقاتهم، وتخصيص الحسابات
             </p>
           </div>
@@ -105,9 +105,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               setShowCreateExam(true);
               setActiveTab('exams');
             }}
-            className="w-full md:w-auto px-6 py-3.5 rounded-2xl duo-btn-green font-black text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+            className="w-full md:w-auto px-5 sm:px-6 py-3 sm:py-3.5 rounded-2xl duo-btn-green font-black text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer shadow-xs touch-manipulation"
           >
-            <Plus className="w-5 h-5 stroke-[2.5]" />
+            <Plus className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5]" />
             <span>إنشاء اختبار جديد (JSON)</span>
           </button>
         )}
@@ -115,14 +115,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       {/* Tabs Navigation */}
       {!showCreateExam && !editingExam && (
-        <div className="flex items-center gap-2 p-1.5 bg-slate-200/70 rounded-2xl border border-slate-200 overflow-x-auto">
+        <div className="flex items-center gap-1.5 sm:gap-2 p-1.5 bg-slate-200/80 backdrop-blur-xs rounded-2xl border border-slate-200 overflow-x-auto no-scrollbar touch-manipulation">
           <button
             type="button"
             onClick={() => {
               soundFX.playPop();
               setActiveTab('exams');
             }}
-            className={`flex-1 min-w-[140px] py-3 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            className={`flex-1 min-w-[115px] sm:min-w-[140px] py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer shrink-0 ${
               activeTab === 'exams'
                 ? 'bg-white text-slate-900 shadow-sm border border-slate-300/60'
                 : 'text-slate-600 hover:text-slate-900'
@@ -138,14 +138,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               soundFX.playPop();
               setActiveTab('examinees');
             }}
-            className={`flex-1 min-w-[140px] py-3 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            className={`flex-1 min-w-[145px] sm:min-w-[170px] py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer shrink-0 ${
               activeTab === 'examinees'
                 ? 'bg-white text-slate-900 shadow-sm border border-slate-300/60'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <Users className="w-4 h-4 text-[#ff9600] stroke-[2.5]" />
-            <span>قسم المختبرين والنتائج ({submissions.length})</span>
+            <span>المختبرون والنتائج ({submissions.length})</span>
           </button>
 
           <button
@@ -154,14 +154,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               soundFX.playPop();
               setActiveTab('users');
             }}
-            className={`flex-1 min-w-[140px] py-3 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            className={`flex-1 min-w-[125px] sm:min-w-[150px] py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer shrink-0 ${
               activeTab === 'users'
                 ? 'bg-white text-slate-900 shadow-sm border border-slate-300/60'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <UserCheck className="w-4 h-4 text-[#1cb0f6] stroke-[2.5]" />
-            <span>إدارة الحسابات ({users.length})</span>
+            <span>الحسابات ({users.length})</span>
           </button>
         </div>
       )}

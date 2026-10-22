@@ -178,7 +178,7 @@ export const ExamResultView: React.FC<ExamResultViewProps> = ({
               </div>
 
               {/* Options Breakdown */}
-              <div className="space-y-2 mr-10">
+              <div className="space-y-2 mr-0 sm:mr-10 mt-3 sm:mt-0">
                 {q.options.map((opt, optIdx) => {
                   const wasPicked = studentPicks.includes(optIdx);
                   const isActuallyCorrect = correctAnswers.includes(optIdx);
@@ -195,23 +195,23 @@ export const ExamResultView: React.FC<ExamResultViewProps> = ({
                   return (
                     <div
                       key={optIdx}
-                      className={`p-3 rounded-xl border-2 flex items-center justify-between text-sm ${optionStyle}`}
+                      className={`p-2.5 sm:p-3 rounded-xl border-2 flex items-center justify-between text-xs sm:text-sm gap-2 ${optionStyle}`}
                     >
-                      <div className="flex items-center gap-3">
-                        <span className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center font-black text-xs text-slate-600">
+                      <div className="flex items-center gap-2.5 min-w-0 pr-0.5">
+                        <span className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center font-black text-xs text-slate-600 shrink-0">
                           {arabicLetters[optIdx] || optIdx + 1}
                         </span>
-                        <span>{opt}</span>
+                        <span className="break-words">{opt}</span>
                       </div>
 
-                      <div className="flex items-center gap-1.5 text-xs font-black">
+                      <div className="flex items-center gap-1.5 text-xs font-black shrink-0">
                         {wasPicked && (
-                          <span className="px-2 py-0.5 rounded-md bg-slate-200 text-slate-700">
+                          <span className="px-2 py-0.5 rounded-md bg-slate-200 text-slate-700 text-[10px] sm:text-xs">
                             إجابتك
                           </span>
                         )}
                         {isActuallyCorrect && (
-                          <span className="px-2 py-0.5 rounded-md bg-emerald-500 text-white">
+                          <span className="px-2 py-0.5 rounded-md bg-emerald-500 text-white text-[10px] sm:text-xs">
                             الصحيحة
                           </span>
                         )}
@@ -223,7 +223,7 @@ export const ExamResultView: React.FC<ExamResultViewProps> = ({
 
               {/* Explanation Note if exists */}
               {q.explanation && (
-                <div className="mt-4 mr-10 p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-600">
+                <div className="mt-3 mr-0 sm:mr-10 p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-600">
                   <span className="font-black text-slate-700">توضيح: </span>
                   {q.explanation}
                 </div>

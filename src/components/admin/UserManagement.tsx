@@ -281,7 +281,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
               </div>
 
               {/* Action row */}
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+              <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
                 <span className="text-[11px] font-bold text-slate-400">
                   آخر دخول: {formatDateArabic(user.lastLoginAt)}
                 </span>

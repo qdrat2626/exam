@@ -628,18 +628,18 @@ export const JsonExamCreator: React.FC<JsonExamCreatorProps> = ({
         </div>
 
         {/* Action Bottom Bar */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-white border-2 border-slate-200 sticky bottom-4 z-20 shadow-md">
-          <div className="text-xs font-black text-slate-600">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 p-3.5 sm:p-4 rounded-2xl bg-white/95 backdrop-blur-xs border-2 border-slate-200 sticky bottom-2 sm:bottom-4 z-20 shadow-md pb-safe touch-manipulation">
+          <div className="text-xs font-black text-slate-600 text-center sm:text-right">
             إجمالي الأسئلة: {questions.length} • إجمالي النقاط:{' '}
             {questions.reduce((sum, q) => sum + (q.points || 0), 0)} نقطة
           </div>
 
-          <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="flex items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
             {onCancel && (
               <button
                 type="button"
                 onClick={onCancel}
-                className="flex-1 sm:flex-none px-5 py-3 rounded-2xl duo-btn-outline font-black text-xs sm:text-sm cursor-pointer"
+                className="flex-1 sm:flex-none px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl duo-btn-outline font-black text-xs sm:text-sm cursor-pointer"
               >
                 إلغاء
               </button>
@@ -649,14 +649,14 @@ export const JsonExamCreator: React.FC<JsonExamCreatorProps> = ({
               type="button"
               disabled={saving || questions.length === 0}
               onClick={handleSaveExam}
-              className="flex-1 sm:flex-none px-8 py-3.5 rounded-2xl duo-btn-green font-black text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              className="flex-1 sm:flex-none px-5 sm:px-8 py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl duo-btn-green font-black text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               {saving ? (
                 <span>جاري الحفظ...</span>
               ) : (
                 <>
                   <Save className="w-4 h-4 stroke-[2.5]" />
-                  <span>حفظ ونشر الاختبار في قاعدة البيانات</span>
+                  <span>حفظ ونشر الاختبار</span>
                 </>
               )}
             </button>

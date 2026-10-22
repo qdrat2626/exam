@@ -198,17 +198,17 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                 {/* Card Action Buttons */}
                 <div className="pt-2 border-t border-slate-100">
                   {isCompleted ? (
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                       <button
                         type="button"
                         onClick={() => {
                           soundFX.playPop();
                           onViewResult(userSub);
                         }}
-                        className="flex-1 py-3 px-4 rounded-xl duo-btn-outline font-black text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer"
+                        className="flex-1 py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl duo-btn-outline font-black text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer touch-manipulation"
                       >
-                        <CheckCircle2 className="w-4 h-4 text-[#58cc02]" />
-                        <span>عرض نتيجتي السابقة ({userSub.percentage}%)</span>
+                        <CheckCircle2 className="w-4 h-4 text-[#58cc02] shrink-0" />
+                        <span className="truncate">عرض نتيجتي السابقة ({userSub.percentage}%)</span>
                       </button>
 
                       <button
@@ -217,7 +217,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                           soundFX.playPop();
                           onStartExam(exam);
                         }}
-                        className="py-3 px-4 rounded-xl duo-btn-green font-black text-xs sm:text-sm cursor-pointer"
+                        className="py-2.5 sm:py-3 px-4 rounded-xl duo-btn-green font-black text-xs sm:text-sm cursor-pointer touch-manipulation shrink-0"
                         title="إعادة المحاولة"
                       >
                         إعادة الاختبار
@@ -230,7 +230,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                         soundFX.playPop();
                         onStartExam(exam);
                       }}
-                      className="w-full py-3.5 px-6 rounded-2xl duo-btn-green font-black text-sm flex items-center justify-center gap-2 cursor-pointer"
+                      className="w-full py-3 sm:py-3.5 px-4 sm:px-6 rounded-2xl duo-btn-green font-black text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer touch-manipulation"
                     >
                       <span>ابدأ الاختبار الآن</span>
                       <ArrowLeft className="w-4 h-4 stroke-[2.5]" />
