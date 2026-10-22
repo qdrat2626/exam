@@ -37,6 +37,7 @@ jobs:
       - name: Build Application
         env:
           CI: false
+          NODE_OPTIONS: "--max-old-space-size=4096"
         run: npm run build
 
       - name: Setup 404 Fallback & NoJekyll
