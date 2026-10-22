@@ -16,9 +16,10 @@ import {
 
 interface AuthScreenProps {
   onSuccess: (user: User, isNew: boolean) => void;
+  terminationNotice?: string | null;
 }
 
-export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess }) => {
+export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess, terminationNotice }) => {
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -80,16 +81,29 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess }) => {
           <div className="w-10 h-10 rounded-2xl bg-[#58cc02] border-b-4 border-[#46a302] flex items-center justify-center text-white shadow-xs">
             <GraduationCap className="w-6 h-6 stroke-[2.5]" />
           </div>
-          <span className="text-xl font-black text-slate-800">منصة الاختبارات الذكية</span>
+          <span className="text-xl font-black text-slate-800">منصة أهل القرءان</span>
         </div>
         <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/80 border border-slate-200 text-xs font-bold text-slate-600 shadow-xs">
           <Sparkles className="w-3.5 h-3.5 text-[#ffc800]" />
-          منظومة تفاعلية
+          منظومة مباركة
         </div>
       </div>
 
       {/* Main Card */}
       <div className="w-full max-w-md my-auto relative z-10">
+        {/* Real-time Session Termination Alert */}
+        {terminationNotice && (
+          <div className="mb-4 p-4 rounded-2xl bg-red-50 border-2 border-b-4 border-[#ff4b4b] text-[#ba2323] flex items-center gap-3 animate-bounce shadow-md">
+            <div className="p-2 rounded-xl bg-white text-red-600 shadow-xs shrink-0">
+              <AlertCircle className="w-6 h-6 stroke-[2.5]" />
+            </div>
+            <div>
+              <p className="text-xs font-black text-red-800 mb-0.5">تنبيه النظام الفوري</p>
+              <p className="text-xs font-bold text-red-700 leading-snug">{terminationNotice}</p>
+            </div>
+          </div>
+        )}
+
         <div className="duo-card p-6 sm:p-8 bg-white/95 backdrop-blur-xs shadow-md">
           {/* Hero Visual Icon Badge */}
           <div className="flex justify-center mb-6">
@@ -194,8 +208,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess }) => {
 
       {/* Footer Info */}
       <div className="w-full max-w-md text-center py-2 relative z-10">
-        <p className="text-xs font-bold text-slate-400">
-          منصة تقييم تفاعلية متطورة | متوافقة مع قاعدة بيانات سحابية متزامنة
+        <p className="text-xs font-black text-slate-500">
+          جميع الحقوق محفوظة لمنصة أهل القرءان
         </p>
       </div>
     </div>

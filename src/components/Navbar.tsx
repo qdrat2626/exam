@@ -46,15 +46,15 @@ export const Navbar: React.FC<NavbarProps> = ({
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <span className="text-sm sm:text-lg md:text-xl font-black text-slate-800 tracking-tight truncate">
-                  منصة الاختبارات الذكية
+                  منصة أهل القرءان
                 </span>
                 <span className="hidden lg:inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#58cc02]/15 text-[#46a302]">
                   <Sparkles className="w-3 h-3 ml-1" />
-                  منظومة متطورة
+                  منظومة مباركة
                 </span>
               </div>
               <p className="text-[10px] sm:text-xs text-slate-400 font-medium hidden sm:block truncate">
-                منظومة الاختبارات التفاعلية والتقييم السريع
+                منظومة الاختبارات القرآنية التفاعلية والتقييم السريع
               </p>
             </div>
           </div>

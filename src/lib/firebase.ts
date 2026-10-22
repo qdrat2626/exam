@@ -11,7 +11,8 @@ import {
   deleteDoc,
   query,
   where,
-  writeBatch
+  writeBatch,
+  onSnapshot
 } from 'firebase/firestore';
 import { User, Exam, Submission, UserRole } from '../types';
 import { normalizeArabic, isDefaultSupervisor, SAMPLE_EXAM_JSON } from './utils';
@@ -608,6 +609,131 @@ export async function getUserSubmissions(userId: string): Promise<Submission[]> 
     return cached
       .filter(s => s.userId === userId)
       .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
+  }
+}
+
+/**
+ * Real-time listener for user document.
+ * If user doc is deleted by admin, immediately fires with null so caller can log them out!
+ */
+export function subscribeToUserDoc(
+  userId: string,
+  onUserChange: (user: User | null) => void
+): () => void {
+  try {
+    const userRef = doc(db, 'users', userId);
+    return onSnapshot(
+      userRef,
+      (snapshot) => {
+        if (!snapshot.exists()) {
+          onUserChange(null);
+        } else {
+          const data = snapshot.data() as User;
+          onUserChange({ ...data, id: snapshot.id });
+        }
+      },
+      (err) => {
+        console.warn('Real-time user snapshot error:', err);
+      }
+    );
+  } catch (err) {
+    console.warn('Failed to attach user snapshot listener:', err);
+    return () => {};
+  }
+}
+
+/**
+ * Real-time listener for all submissions across the platform.
+ * Instant live updates when admin deletes an attempt or student submits an attempt!
+ */
+export function subscribeToSubmissions(
+  onUpdate: (subs: Submission[]) => void
+): () => void {
+  try {
+    const subsCol = collection(db, 'submissions');
+    return onSnapshot(
+      subsCol,
+      (snapshot) => {
+        const subs: Submission[] = [];
+        snapshot.forEach((d) => {
+          subs.push(d.data() as Submission);
+        });
+        subs.sort(
+          (a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
+        );
+        setCachedData(STORAGE_SUBS_KEY, subs);
+        onUpdate(subs);
+      },
+      (err) => {
+        console.warn('Real-time submissions snapshot error:', err);
+      }
+    );
+  } catch (err) {
+    console.warn('Failed to attach submissions snapshot listener:', err);
+    return () => {};
+  }
+}
+
+/**
+ * Real-time listener for exams collection.
+ * Instant live updates when exams are added, modified, or deleted.
+ */
+export function subscribeToExams(
+  onUpdate: (exams: Exam[]) => void
+): () => void {
+  try {
+    const examsCol = collection(db, 'exams');
+    return onSnapshot(
+      examsCol,
+      (snapshot) => {
+        const deletedIds = new Set(getCachedData<string[]>(STORAGE_DELETED_EXAMS_KEY, []));
+        const exams: Exam[] = [];
+        snapshot.forEach((d) => {
+          const data = d.data() as Exam;
+          const examId = data.id || d.id;
+          if (!deletedIds.has(examId)) {
+            exams.push({ ...data, id: examId });
+          }
+        });
+        setCachedData(STORAGE_EXAMS_KEY, exams);
+        onUpdate(exams);
+      },
+      (err) => {
+        console.warn('Real-time exams snapshot error:', err);
+      }
+    );
+  } catch (err) {
+    console.warn('Failed to attach exams snapshot listener:', err);
+    return () => {};
+  }
+}
+
+/**
+ * Real-time listener for users collection.
+ * Instant live updates for user list in admin panel.
+ */
+export function subscribeToUsers(
+  onUpdate: (users: User[]) => void
+): () => void {
+  try {
+    const usersCol = collection(db, 'users');
+    return onSnapshot(
+      usersCol,
+      (snapshot) => {
+        const users: User[] = [];
+        snapshot.forEach((d) => {
+          users.push(d.data() as User);
+        });
+        setCachedData(STORAGE_USERS_KEY, users);
+        onUpdate(users);
+      },
+      (err) => {
+        console.warn('Real-time users snapshot error:', err);
+      }
+    );
+  } catch (err) {
+    console.warn('Failed to attach users snapshot listener:', err);
+    return () => {};
   }
 }
 
