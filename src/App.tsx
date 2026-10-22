@@ -8,6 +8,7 @@ import { StudentDashboard } from './components/student/StudentDashboard';
 import { ExamTakingSession } from './components/student/ExamTakingSession';
 import { ExamResultView } from './components/student/ExamResultView';
 import { AdminDashboard } from './components/admin/AdminDashboard';
+import { LivingBackground } from './components/LivingBackground';
 
 const CURRENT_USER_STORAGE_KEY = 'duo_exam_user_session';
 
@@ -105,7 +106,8 @@ export default function App() {
   // Viewing detailed submission result
   if (viewingSubmission) {
     return (
-      <div className="min-h-screen bg-[#f7f7f7] pb-12">
+      <div className="min-h-screen relative pb-12 overflow-hidden">
+        <LivingBackground />
         <Navbar
           currentUser={currentUser}
           onLogout={handleLogout}
@@ -117,17 +119,21 @@ export default function App() {
           soundEnabled={soundEnabled}
           onToggleSound={handleToggleSound}
         />
-        <ExamResultView
-          submission={viewingSubmission}
-          onBack={() => setViewingSubmission(null)}
-        />
+        <div className="relative z-10">
+          <ExamResultView
+            submission={viewingSubmission}
+            onBack={() => setViewingSubmission(null)}
+          />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#f7f7f7] flex flex-col justify-between">
-      <div>
+    <div className="min-h-screen relative flex flex-col justify-between overflow-hidden">
+      <LivingBackground />
+
+      <div className="relative z-10">
         <Navbar
           currentUser={currentUser}
           onLogout={handleLogout}
@@ -166,8 +172,8 @@ export default function App() {
       </div>
 
       {/* Global Footer */}
-      <footer className="border-t-2 border-slate-200 bg-white py-6 text-center text-xs font-bold text-slate-400">
-        منظومة دولينجو للاختبارات التفاعلية • قاعدة بيانات سحابية مربوطة بالكامل • تصميم احترافي
+      <footer className="border-t-2 border-slate-200 bg-white/90 backdrop-blur-xs py-6 text-center text-xs font-bold text-slate-500 relative z-10">
+        منظومة الاختبارات التفاعلية الذكية • قاعدة بيانات سحابية متزامنة بالكامل • تصميم احترافي
       </footer>
     </div>
   );

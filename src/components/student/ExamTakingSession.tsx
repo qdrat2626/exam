@@ -3,6 +3,7 @@ import { Exam, Question, Submission, User } from '../../types';
 import { soundFX } from '../../lib/audio';
 import { submitExamAttempt } from '../../lib/firebase';
 import { formatDurationArabic, fireDuolingoConfetti } from '../../lib/utils';
+import { LivingBackground } from '../LivingBackground';
 import {
   Clock,
   X,
@@ -198,9 +199,11 @@ export const ExamTakingSession: React.FC<ExamTakingSessionProps> = ({
   const arabicLetters = ['أ', 'ب', 'ج', 'د', 'هـ', 'و'];
 
   return (
-    <div className="min-h-screen bg-[#f7f7f7] flex flex-col justify-between">
+    <div className="min-h-screen relative flex flex-col justify-between overflow-hidden">
+      <LivingBackground />
+
       {/* Top Header & Progress Bar */}
-      <header className="bg-white border-b-2 border-slate-200 sticky top-0 z-30">
+      <header className="bg-white/95 backdrop-blur-xs border-b-2 border-slate-200 sticky top-0 z-30">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
           {/* Close / Exit Button */}
           <button

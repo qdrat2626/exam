@@ -105,3 +105,88 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+/* Living Background Animations */
+@keyframes floatSlow {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px) rotate(0deg);
+  }
+  33% {
+    transform: translateY(-25px) translateX(15px) rotate(4deg);
+  }
+  66% {
+    transform: translateY(-12px) translateX(-18px) rotate(-4deg);
+  }
+}
+
+@keyframes floatReverse {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px) rotate(0deg);
+  }
+  33% {
+    transform: translateY(20px) translateX(-15px) rotate(-5deg);
+  }
+  66% {
+    transform: translateY(10px) translateX(15px) rotate(5deg);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.4;
+  }
+  50% {
+    transform: scale(1.18);
+    opacity: 0.65;
+  }
+}
+
+@keyframes driftParticle {
+  0% {
+    transform: translateY(105vh) scale(0.6) rotate(0deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.35;
+  }
+  85% {
+    opacity: 0.35;
+  }
+  100% {
+    transform: translateY(-10vh) scale(1.1) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+.animate-float-slow {
+  animation: floatSlow 14s ease-in-out infinite;
+}
+
+.animate-float-reverse {
+  animation: floatReverse 18s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 8s ease-in-out infinite;
+}
+
+.animate-particle-1 {
+  animation: driftParticle 20s linear infinite;
+}
+.animate-particle-2 {
+  animation: driftParticle 25s linear 4s infinite;
+}
+.animate-particle-3 {
+  animation: driftParticle 18s linear 8s infinite;
+}
+.animate-particle-4 {
+  animation: driftParticle 22s linear 12s infinite;
+}
+.animate-particle-5 {
+  animation: driftParticle 26s linear 2s infinite;
+}
+.animate-particle-6 {
+  animation: driftParticle 19s linear 7s infinite;
+}
+

@@ -38,10 +38,10 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xl font-black text-slate-800 tracking-tight">دولينجو اختبارات</span>
+              <span className="text-xl font-black text-slate-800 tracking-tight">منصة الاختبارات الذكية</span>
               <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-[#58cc02]/15 text-[#46a302]">
-                <Sparkles className="w-3 h-3 ml-1" />
-                نسخة تفاعلية
+                <Sparkles className="w-3.5 h-3.5 ml-1" />
+                منظومة متطورة
               </span>
             </div>
             <p className="text-xs text-slate-500 font-medium hidden sm:block">منظومة الاختبارات التفاعلية والتقييم السريع</p>

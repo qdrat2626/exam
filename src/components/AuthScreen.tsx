@@ -3,6 +3,7 @@ import { findOrCreateUser } from '../lib/firebase';
 import { User } from '../types';
 import { soundFX } from '../lib/audio';
 import { isValidQuadName, SUPERVISOR_EXACT_NAME, fireDuolingoConfetti } from '../lib/utils';
+import { LivingBackground } from './LivingBackground';
 import {
   GraduationCap,
   Shield,
@@ -76,24 +77,27 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f7f7f7] flex flex-col justify-between items-center p-4 sm:p-6">
+    <div className="min-h-screen relative flex flex-col justify-between items-center p-4 sm:p-6 overflow-hidden">
+      {/* Living Animated Dynamic Background */}
+      <LivingBackground />
+
       {/* Top Brand Bar */}
-      <div className="w-full max-w-md flex items-center justify-between py-2">
+      <div className="w-full max-w-md flex items-center justify-between py-2 relative z-10">
         <div className="flex items-center gap-2">
           <div className="w-10 h-10 rounded-2xl bg-[#58cc02] border-b-4 border-[#46a302] flex items-center justify-center text-white shadow-xs">
             <GraduationCap className="w-6 h-6 stroke-[2.5]" />
           </div>
-          <span className="text-xl font-black text-slate-800">دولينجو اختبارات</span>
+          <span className="text-xl font-black text-slate-800">منصة الاختبارات الذكية</span>
         </div>
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-200/80 text-xs font-bold text-slate-600">
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/80 border border-slate-200 text-xs font-bold text-slate-600 shadow-xs">
           <Sparkles className="w-3.5 h-3.5 text-[#ffc800]" />
-          منظومة ذكية
+          منظومة تفاعلية
         </div>
       </div>
 
       {/* Main Card */}
-      <div className="w-full max-w-md my-auto">
-        <div className="duo-card p-6 sm:p-8 bg-white shadow-sm">
+      <div className="w-full max-w-md my-auto relative z-10">
+        <div className="duo-card p-6 sm:p-8 bg-white/95 backdrop-blur-xs shadow-md">
           {/* Hero Visual Icon Badge */}
           <div className="flex justify-center mb-6">
             <div className="relative">
@@ -209,9 +213,9 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess }) => {
       </div>
 
       {/* Footer Info */}
-      <div className="w-full max-w-md text-center py-2">
+      <div className="w-full max-w-md text-center py-2 relative z-10">
         <p className="text-xs font-bold text-slate-400">
-          منصة تقييم مستوحاة من نمط دولينجو التفاعلي | متوافقة مع قاعدة بيانات Firestore
+          منصة تقييم تفاعلية متطورة | متوافقة مع قاعدة بيانات سحابية متزامنة
         </p>
       </div>
     </div>

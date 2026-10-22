@@ -121,7 +121,7 @@ export const SubmissionsViewer: React.FC<SubmissionsViewerProps> = ({
     });
 
     msg += `--------------------------------------\n`;
-    msg += `تم الاستخراج عبر منصة دولينجو للاختبارات`;
+    msg += `تم الاستخراج عبر منصة الاختبارات الذكية`;
 
     return msg;
   };
