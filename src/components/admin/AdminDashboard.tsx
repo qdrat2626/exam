@@ -30,6 +30,8 @@ interface AdminDashboardProps {
   submissions: Submission[];
   users: User[];
   onReloadData: () => void;
+  onSaveExam?: (exam: Exam) => void;
+  onDeleteExam?: (examId: string) => void;
   onPreviewExam: (exam: Exam) => void;
 }
 
@@ -39,6 +41,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   submissions,
   users,
   onReloadData,
+  onSaveExam,
+  onDeleteExam,
   onPreviewExam
 }) => {
   const [activeTab, setActiveTab] = useState<'exams' | 'examinees' | 'users'>('exams');
@@ -59,10 +63,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const handleConfirmDeleteExam = async () => {
     if (!examToDelete) return;
+    const targetId = examToDelete.id;
     setIsDeleting(true);
     soundFX.playPop();
     try {
-      await deleteExam(examToDelete.id);
+      if (onDeleteExam) {
+        onDeleteExam(targetId);
+      }
+      await deleteExam(targetId);
       soundFX.playSuccess();
       setExamToDelete(null);
       onReloadData();
@@ -171,9 +179,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         <JsonExamCreator
           initialExam={editingExam}
           supervisorName={currentUser.fullName}
-          onSaved={() => {
+          onSaved={(savedExam) => {
             setShowCreateExam(false);
             setEditingExam(null);
+            if (onSaveExam) {
+              onSaveExam(savedExam);
+            }
             onReloadData();
           }}
           onCancel={() => {
@@ -351,12 +362,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <p className="text-sm font-bold text-slate-700 mb-2">
               هل أنت متأكد من رغبتك في حذف هذا الاختبار بشكل نهائي؟
             </p>
-            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 mb-4">
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 mb-3">
               <span className="text-xs font-black text-slate-800">{examToDelete.title}</span>
               <p className="text-[11px] font-semibold text-slate-400 mt-0.5">
                 {examToDelete.questions.length} أسئلة • {examToDelete.totalPoints} نقطة
               </p>
             </div>
+
+            {submissions.filter((s) => s.examId === examToDelete.id).length > 0 && (
+              <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold mb-4">
+                تنبيه: يحتوي هذا الاختبار على {submissions.filter((s) => s.examId === examToDelete.id).length} نتيجة مسجلة للطلاب، وسيتم حذفها تلقائياً معه لتنظيف قاعدة البيانات.
+              </div>
+            )}
 
             <div className="flex gap-3">
               <button

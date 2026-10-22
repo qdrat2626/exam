@@ -1,4 +1,3 @@
-import React from 'react';
 import { User } from '../types';
 import { soundFX } from '../lib/audio';
 import {
@@ -8,7 +7,9 @@ import {
   Shield,
   GraduationCap,
   Sparkles,
-  Layers
+  Layers,
+  Cloud,
+  RefreshCw
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -18,6 +19,8 @@ interface NavbarProps {
   onChangeView: (view: 'student' | 'admin') => void;
   soundEnabled: boolean;
   onToggleSound: () => void;
+  isSyncing?: boolean;
+  onRefreshData?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -26,7 +29,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   activeView,
   onChangeView,
   soundEnabled,
-  onToggleSound
+  onToggleSound,
+  isSyncing,
+  onRefreshData
 }) => {
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b-2 border-slate-200 shadow-xs touch-manipulation">
@@ -90,6 +95,24 @@ export const Navbar: React.FC<NavbarProps> = ({
                   واجهة الاختبارات
                 </button>
               </div>
+            )}
+
+            {/* Cloud Database Status & Sync button */}
+            {onRefreshData && (
+              <button
+                type="button"
+                onClick={() => {
+                  soundFX.playPop();
+                  onRefreshData();
+                }}
+                title="قاعدة بيانات Firebase السحابية متصلة (exam-65429) - انقر للمزامنة الفورية"
+                className="h-9 sm:h-10 px-2 sm:px-3 rounded-xl border-2 border-slate-200 border-b-4 hover:border-emerald-300 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 active:border-b-2 active:translate-y-0.5 transition-all text-xs font-bold flex items-center gap-1.5 cursor-pointer bg-white"
+              >
+                <span className="w-2 h-2 rounded-full bg-[#58cc02] animate-pulse shrink-0" />
+                <Cloud className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#58cc02] shrink-0" />
+                <span className="hidden xl:inline text-slate-700 font-black text-[11px]">مربوط بالسحابة</span>
+                <RefreshCw className={`w-3 h-3 text-slate-400 ${isSyncing ? 'animate-spin text-[#58cc02]' : ''}`} />
+              </button>
             )}
 
             {/* Sound Toggle */}

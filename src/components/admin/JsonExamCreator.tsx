@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Exam, Question, QuestionType } from '../../types';
 import { soundFX } from '../../lib/audio';
-import { saveExam } from '../../lib/firebase';
+import { saveExam, deleteExam } from '../../lib/firebase';
 import { SAMPLE_EXAM_JSON, validateExamQuestions, fireDuolingoConfetti } from '../../lib/utils';
 import {
   FileCode,
@@ -16,7 +16,9 @@ import {
   HelpCircle,
   Sparkles,
   ArrowUpDown,
-  BookOpen
+  BookOpen,
+  X,
+  AlertTriangle
 } from 'lucide-react';
 
 interface JsonExamCreatorProps {
@@ -51,6 +53,34 @@ export const JsonExamCreator: React.FC<JsonExamCreatorProps> = ({
   const [saving, setSaving] = useState(false);
   const [successBanner, setSuccessBanner] = useState<string | null>(null);
   const [validationWarning, setValidationWarning] = useState<string | null>(null);
+
+  // Deletion modals
+  const [showClearQuestionsModal, setShowClearQuestionsModal] = useState(false);
+  const [showDeleteExamModal, setShowDeleteExamModal] = useState(false);
+  const [isDeletingExam, setIsDeletingExam] = useState(false);
+
+  const handleConfirmClearQuestions = () => {
+    soundFX.playPop();
+    setQuestions([]);
+    setShowClearQuestionsModal(false);
+  };
+
+  const handleConfirmDeleteExam = async () => {
+    if (!initialExam) return;
+    setIsDeletingExam(true);
+    soundFX.playPop();
+    try {
+      await deleteExam(initialExam.id);
+      soundFX.playSuccess();
+      setShowDeleteExamModal(false);
+      if (onCancel) onCancel();
+    } catch (err) {
+      console.error(err);
+      soundFX.playError();
+    } finally {
+      setIsDeletingExam(false);
+    }
+  };
 
   // Copy template script
   const handleCopyTemplate = async () => {
@@ -198,15 +228,46 @@ export const JsonExamCreator: React.FC<JsonExamCreatorProps> = ({
 
   // Save exam to Firestore
   const handleSaveExam = async () => {
-    if (!title.trim()) {
+    let targetQuestions = [...questions];
+    let targetTitle = title.trim();
+    let targetDescription = description.trim();
+
+    // If questions list is empty but user pasted JSON in the textarea, auto-parse it now!
+    if (targetQuestions.length === 0 && jsonInput.trim()) {
+      try {
+        const parsed = JSON.parse(jsonInput);
+        if (parsed.title && !targetTitle) {
+          targetTitle = String(parsed.title).trim();
+          setTitle(targetTitle);
+        }
+        if (parsed.description && !targetDescription) {
+          targetDescription = String(parsed.description).trim();
+          setDescription(targetDescription);
+        }
+        const raw = Array.isArray(parsed.questions)
+          ? parsed.questions
+          : Array.isArray(parsed)
+          ? parsed
+          : [];
+        const valResult = validateExamQuestions(raw);
+        if (valResult.valid && valResult.questions.length > 0) {
+          targetQuestions = valResult.questions;
+          setQuestions(targetQuestions);
+        }
+      } catch {
+        // Will be caught by validation below
+      }
+    }
+
+    if (!targetTitle) {
       soundFX.playError();
       setValidationWarning('يرجى كتابة عنوان للاختبار');
       setTimeout(() => setValidationWarning(null), 3500);
       return;
     }
-    if (questions.length === 0) {
+    if (targetQuestions.length === 0) {
       soundFX.playError();
-      setValidationWarning('يرجى إضافة سؤال واحد على الأقل للاختبار');
+      setValidationWarning('يرجى إضافة سؤال واحد على الأقل أو لصق كود JSON صحيح');
       setTimeout(() => setValidationWarning(null), 3500);
       return;
     }
@@ -215,28 +276,28 @@ export const JsonExamCreator: React.FC<JsonExamCreatorProps> = ({
     soundFX.playPop();
 
     try {
-      const totalPoints = questions.reduce((sum, q) => sum + (q.points || 0), 0);
+      const totalPoints = targetQuestions.reduce((sum, q) => sum + (q.points || 0), 0);
       const saved = await saveExam({
         ...(initialExam?.id ? { id: initialExam.id } : {}),
-        title: title.trim(),
-        description: description.trim(),
+        title: targetTitle,
+        description: targetDescription,
         durationMinutes: Number(durationMinutes) || 20,
         isUnlimitedTime,
         isOpenWindow,
-        startsAt: isOpenWindow ? undefined : startsAt,
-        endsAt: isOpenWindow ? undefined : endsAt,
-        questions,
+        startsAt: isOpenWindow ? '' : startsAt,
+        endsAt: isOpenWindow ? '' : endsAt,
+        questions: targetQuestions,
         totalPoints,
         passingPoints: Math.round(totalPoints * 0.5),
         createdBy: supervisorName,
-        isActive: true
+        isActive: initialExam?.isActive !== undefined ? initialExam.isActive : true
       });
 
       soundFX.playSuccess();
       fireDuolingoConfetti();
       onSaved(saved);
     } catch (err) {
-      console.error(err);
+      console.error('Error saving exam:', err);
       soundFX.playError();
       setValidationWarning('حدث خطأ أثناء حفظ الاختبار في قاعدة البيانات');
     } finally {
@@ -347,14 +408,31 @@ export const JsonExamCreator: React.FC<JsonExamCreatorProps> = ({
               إعدادات ومراجعة الاختبار ({questions.length} أسئلة)
             </h3>
           </div>
-          <button
-            type="button"
-            onClick={handleAddQuestion}
-            className="px-4 py-2 rounded-xl duo-btn-outline font-black text-xs flex items-center gap-1.5 cursor-pointer"
-          >
-            <Plus className="w-4 h-4 stroke-[2.5]" />
-            <span>إضافة سؤال يدوياً</span>
-          </button>
+          <div className="flex items-center gap-2">
+            {questions.length > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  soundFX.playPop();
+                  setShowClearQuestionsModal(true);
+                }}
+                className="px-3.5 py-2 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 font-black text-xs flex items-center gap-1.5 cursor-pointer transition-all"
+                title="مسح كافة الأسئلة والبدء من جديد"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>مسح كافة الأسئلة</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={handleAddQuestion}
+              className="px-4 py-2 rounded-xl duo-btn-outline font-black text-xs flex items-center gap-1.5 cursor-pointer"
+            >
+              <Plus className="w-4 h-4 stroke-[2.5]" />
+              <span>إضافة سؤال يدوياً</span>
+            </button>
+          </div>
         </div>
 
         {validationWarning && (
@@ -634,7 +712,22 @@ export const JsonExamCreator: React.FC<JsonExamCreatorProps> = ({
             {questions.reduce((sum, q) => sum + (q.points || 0), 0)} نقطة
           </div>
 
-          <div className="flex items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
+          <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
+            {initialExam && (
+              <button
+                type="button"
+                onClick={() => {
+                  soundFX.playPop();
+                  setShowDeleteExamModal(true);
+                }}
+                className="px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl border-2 border-red-200 text-red-600 hover:bg-red-50 font-black text-xs sm:text-sm flex items-center gap-1.5 cursor-pointer transition-all"
+                title="حذف هذا الاختبار نهائياً"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>حذف الاختبار</span>
+              </button>
+            )}
+
             {onCancel && (
               <button
                 type="button"
@@ -647,22 +740,114 @@ export const JsonExamCreator: React.FC<JsonExamCreatorProps> = ({
 
             <button
               type="button"
-              disabled={saving || questions.length === 0}
+              disabled={saving || (questions.length === 0 && !jsonInput.trim())}
               onClick={handleSaveExam}
               className="flex-1 sm:flex-none px-5 sm:px-8 py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl duo-btn-green font-black text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               {saving ? (
-                <span>جاري الحفظ...</span>
+                <span>جاري الحفظ السحابي...</span>
               ) : (
                 <>
                   <Save className="w-4 h-4 stroke-[2.5]" />
-                  <span>حفظ ونشر الاختبار</span>
+                  <span>{initialExam ? 'حفظ التعديلات' : 'حفظ ونشر الاختبار'}</span>
                 </>
               )}
             </button>
           </div>
         </div>
       </div>
+
+      {/* Clear All Questions Modal */}
+      {showClearQuestionsModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="duo-card max-w-sm w-full bg-white p-6 shadow-2xl animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between border-b pb-3 mb-4">
+              <div className="flex items-center gap-2 text-red-600">
+                <Trash2 className="w-5 h-5 stroke-[2.5]" />
+                <h3 className="text-base font-black text-slate-800">مسح كافة الأسئلة</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowClearQuestionsModal(false)}
+                className="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-sm font-bold text-slate-700 mb-2">
+              هل أنت متأكد من رغبتك في إفراغ كافة الأسئلة ({questions.length} سؤال)؟
+            </p>
+            <p className="text-xs font-semibold text-slate-500 mb-4">
+              سيتم تفريغ قائمة الأسئلة لتتمكن من إدخال أسئلة جديدة أو لصق كود JSON آخر.
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowClearQuestionsModal(false)}
+                className="flex-1 py-3 rounded-xl duo-btn-outline font-black text-xs cursor-pointer"
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmClearQuestions}
+                className="flex-1 py-3 rounded-xl duo-btn-red font-black text-xs flex items-center justify-center gap-2 cursor-pointer"
+              >
+                مسح الأسئلة الآن
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Exam Confirmation Modal */}
+      {showDeleteExamModal && initialExam && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="duo-card max-w-sm w-full bg-white p-6 shadow-2xl animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between border-b pb-3 mb-4">
+              <div className="flex items-center gap-2 text-red-600">
+                <AlertTriangle className="w-5 h-5 stroke-[2.5]" />
+                <h3 className="text-base font-black text-slate-800">حذف هذا الاختبار</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDeleteExamModal(false)}
+                className="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-sm font-bold text-slate-700 mb-2">
+              هل أنت متأكد من حذف اختبار &quot;{initialExam.title}&quot; نهائياً؟
+            </p>
+            <p className="text-xs font-semibold text-red-600 mb-4">
+              سيتم حذف الاختبار ونتائج الطلاب المرتبطة به من قاعدة البيانات.
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowDeleteExamModal(false)}
+                disabled={isDeletingExam}
+                className="flex-1 py-3 rounded-xl duo-btn-outline font-black text-xs cursor-pointer disabled:opacity-50"
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteExam}
+                disabled={isDeletingExam}
+                className="flex-1 py-3 rounded-xl duo-btn-red font-black text-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                {isDeletingExam ? 'جاري الحذف...' : 'نعم، حذف الاختبار'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

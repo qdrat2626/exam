@@ -2,7 +2,11 @@ import React, { useState } from 'react';
 import { Exam, Submission } from '../../types';
 import { soundFX } from '../../lib/audio';
 import { formatDurationArabic, formatDateArabic } from '../../lib/utils';
-import { deleteSubmission } from '../../lib/firebase';
+import {
+  deleteSubmission,
+  deleteMultipleSubmissions,
+  deleteAllSubmissionsForExam
+} from '../../lib/firebase';
 import {
   Users,
   Search,
@@ -19,7 +23,8 @@ import {
   CheckSquare,
   Square,
   Trash2,
-  AlertTriangle
+  AlertTriangle,
+  RotateCcw
 } from 'lucide-react';
 
 interface SubmissionsViewerProps {
@@ -44,6 +49,11 @@ export const SubmissionsViewer: React.FC<SubmissionsViewerProps> = ({
   const [submissionToDelete, setSubmissionToDelete] = useState<Submission | null>(null);
   const [isDeletingSub, setIsDeletingSub] = useState(false);
 
+  // Batch delete modals
+  const [showDeleteSelectedModal, setShowDeleteSelectedModal] = useState(false);
+  const [showDeleteAllExamSubsModal, setShowDeleteAllExamSubsModal] = useState(false);
+  const [isDeletingBatch, setIsDeletingBatch] = useState(false);
+
   const handleConfirmDeleteSubmission = async () => {
     if (!submissionToDelete) return;
     setIsDeletingSub(true);
@@ -51,6 +61,7 @@ export const SubmissionsViewer: React.FC<SubmissionsViewerProps> = ({
     try {
       await deleteSubmission(submissionToDelete.id);
       soundFX.playSuccess();
+      setSelectedSubmissionIds((prev) => prev.filter((id) => id !== submissionToDelete.id));
       setSubmissionToDelete(null);
       if (onReloadData) onReloadData();
     } catch (err) {
@@ -58,6 +69,41 @@ export const SubmissionsViewer: React.FC<SubmissionsViewerProps> = ({
       soundFX.playError();
     } finally {
       setIsDeletingSub(false);
+    }
+  };
+
+  const handleConfirmDeleteSelected = async () => {
+    if (selectedSubmissionIds.length === 0) return;
+    setIsDeletingBatch(true);
+    soundFX.playPop();
+    try {
+      await deleteMultipleSubmissions(selectedSubmissionIds);
+      soundFX.playSuccess();
+      setSelectedSubmissionIds([]);
+      setShowDeleteSelectedModal(false);
+      if (onReloadData) onReloadData();
+    } catch (err) {
+      console.error('Batch delete failed:', err);
+      soundFX.playError();
+    } finally {
+      setIsDeletingBatch(false);
+    }
+  };
+
+  const handleConfirmDeleteAllExamSubs = async () => {
+    setIsDeletingBatch(true);
+    soundFX.playPop();
+    try {
+      await deleteAllSubmissionsForExam(selectedExamId);
+      soundFX.playSuccess();
+      setSelectedSubmissionIds([]);
+      setShowDeleteAllExamSubsModal(false);
+      if (onReloadData) onReloadData();
+    } catch (err) {
+      console.error('Delete all submissions failed:', err);
+      soundFX.playError();
+    } finally {
+      setIsDeletingBatch(false);
     }
   };
 
@@ -259,7 +305,7 @@ export const SubmissionsViewer: React.FC<SubmissionsViewerProps> = ({
       <div className="duo-card bg-white overflow-hidden">
         {/* Table Toolbar */}
         <div className="p-4 border-b-2 border-slate-100 flex flex-wrap items-center justify-between gap-3 bg-slate-50/50">
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
               onClick={toggleSelectAll}
@@ -276,10 +322,42 @@ export const SubmissionsViewer: React.FC<SubmissionsViewerProps> = ({
                   : 'تحديد كافة الطلاب'}
               </span>
             </button>
+
+            {/* Bulk Delete Selected Button */}
+            {selectedSubmissionIds.length > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  soundFX.playPop();
+                  setShowDeleteSelectedModal(true);
+                }}
+                className="px-3 py-1.5 rounded-xl duo-btn-red text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-xs animate-in fade-in"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>حذف المحدد ({selectedSubmissionIds.length})</span>
+              </button>
+            )}
           </div>
 
-          <div className="text-xs font-bold text-slate-500">
-            عدد النتائج المعروضة: {displayedSubmissions.length}
+          <div className="flex items-center gap-3">
+            {displayedSubmissions.length > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  soundFX.playPop();
+                  setShowDeleteAllExamSubsModal(true);
+                }}
+                className="px-3 py-1.5 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 text-xs font-black flex items-center gap-1.5 cursor-pointer transition-all"
+                title="مسح كافة نتائج هذا الاختبار دفعة واحدة"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>مسح كافة النتائج المعروضة ({displayedSubmissions.length})</span>
+              </button>
+            )}
+
+            <div className="text-xs font-bold text-slate-500">
+              عدد النتائج المعروضة: {displayedSubmissions.length}
+            </div>
           </div>
         </div>
 
@@ -595,6 +673,100 @@ export const SubmissionsViewer: React.FC<SubmissionsViewerProps> = ({
                 className="flex-1 py-3 rounded-xl duo-btn-red font-black text-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 {isDeletingSub ? 'جاري الحذف...' : 'حذف النتيجة'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Multiple Selected Submissions Modal */}
+      {showDeleteSelectedModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="duo-card max-w-sm w-full bg-white p-6 shadow-2xl animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between border-b pb-3 mb-4">
+              <div className="flex items-center gap-2 text-red-600">
+                <Trash2 className="w-5 h-5 stroke-[2.5]" />
+                <h3 className="text-base font-black text-slate-800">حذف النتائج المحددة</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDeleteSelectedModal(false)}
+                className="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-sm font-bold text-slate-700 mb-2">
+              هل أنت متأكد من حذف <span className="text-red-600 font-black">{selectedSubmissionIds.length}</span> نتيجة محددة من قاعدة البيانات؟
+            </p>
+            <p className="text-xs font-semibold text-slate-500 mb-4">
+              لا يمكن التراجع عن هذه العملية بعد إتمام الحذف.
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowDeleteSelectedModal(false)}
+                disabled={isDeletingBatch}
+                className="flex-1 py-3 rounded-xl duo-btn-outline font-black text-xs cursor-pointer disabled:opacity-50"
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteSelected}
+                disabled={isDeletingBatch}
+                className="flex-1 py-3 rounded-xl duo-btn-red font-black text-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                {isDeletingBatch ? 'جاري الحذف السحابي...' : `نعم، حذف ${selectedSubmissionIds.length} نتيجة`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete All Submissions for Exam Modal */}
+      {showDeleteAllExamSubsModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="duo-card max-w-sm w-full bg-white p-6 shadow-2xl animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between border-b pb-3 mb-4">
+              <div className="flex items-center gap-2 text-red-600">
+                <AlertTriangle className="w-5 h-5 stroke-[2.5]" />
+                <h3 className="text-base font-black text-slate-800">مسح كافة نتائج الاختبار</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDeleteAllExamSubsModal(false)}
+                className="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-sm font-bold text-slate-700 mb-2">
+              هل أنت متأكد من مسح جميع نتائج {currentExam ? `اختبار "${currentExam.title}"` : 'كافة الاختبارات'}؟
+            </p>
+            <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs font-bold mb-4">
+              سيتم حذف جميع النتائج المعروضة البالغ عددها ({displayedSubmissions.length}) بالكامل من Firestore.
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowDeleteAllExamSubsModal(false)}
+                disabled={isDeletingBatch}
+                className="flex-1 py-3 rounded-xl duo-btn-outline font-black text-xs cursor-pointer disabled:opacity-50"
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteAllExamSubs}
+                disabled={isDeletingBatch}
+                className="flex-1 py-3 rounded-xl duo-btn-red font-black text-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                {isDeletingBatch ? 'جاري المسح...' : 'تأكيد مسح كافة النتائج'}
               </button>
             </div>
           </div>

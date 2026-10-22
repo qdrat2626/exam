@@ -443,12 +443,15 @@ export const UserManagement: React.FC<UserManagementProps> = ({
             <p className="text-sm font-bold text-slate-700 mb-2">
               هل أنت متأكد من رغبتك في حذف هذا الحساب نهائياً؟
             </p>
-            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 mb-4">
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 mb-3">
               <span className="text-xs font-black text-slate-800">{userToDelete.fullName}</span>
               <p className="text-[11px] font-semibold text-slate-400 mt-0.5">
                 الرتبة: {userToDelete.role === 'admin' ? 'مشرف' : 'طالب مختبر'}
               </p>
             </div>
+            <p className="text-[11px] font-semibold text-slate-500 mb-4">
+              سيتم حذف الحساب وسجل نتائجه ومحاولاته بالكامل من قاعدة البيانات.
+            </p>
 
             <div className="flex gap-3">
               <button

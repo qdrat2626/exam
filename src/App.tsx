@@ -35,18 +35,25 @@ export default function App() {
   // Sound enabled state
   const [soundEnabled, setSoundEnabled] = useState(soundFX.enabled);
 
-  // Load backend data from Firestore
+  // Load backend data from Firestore with high resilience
   const loadAllData = useCallback(async () => {
     setLoadingData(true);
     try {
-      const [fetchedExams, fetchedSubs, fetchedUsers] = await Promise.all([
+      const results = await Promise.allSettled([
         getExams(),
         getAllSubmissions(),
         getAllUsers()
       ]);
-      setExams(fetchedExams);
-      setSubmissions(fetchedSubs);
-      setUsers(fetchedUsers);
+
+      if (results[0].status === 'fulfilled') {
+        setExams(results[0].value);
+      }
+      if (results[1].status === 'fulfilled') {
+        setSubmissions(results[1].value);
+      }
+      if (results[2].status === 'fulfilled') {
+        setUsers(results[2].value);
+      }
     } catch (err) {
       console.error('Error fetching data from database:', err);
     } finally {
@@ -118,6 +125,8 @@ export default function App() {
           }}
           soundEnabled={soundEnabled}
           onToggleSound={handleToggleSound}
+          isSyncing={loadingData}
+          onRefreshData={loadAllData}
         />
         <div className="relative z-10">
           <ExamResultView
@@ -141,6 +150,8 @@ export default function App() {
           onChangeView={setActiveView}
           soundEnabled={soundEnabled}
           onToggleSound={handleToggleSound}
+          isSyncing={loadingData}
+          onRefreshData={loadAllData}
         />
 
         <main className="pb-16">
@@ -151,6 +162,21 @@ export default function App() {
               submissions={submissions}
               users={users}
               onReloadData={loadAllData}
+              onSaveExam={(savedExam) => {
+                setExams((prev) => {
+                  const idx = prev.findIndex((e) => e.id === savedExam.id);
+                  if (idx >= 0) {
+                    const next = [...prev];
+                    next[idx] = savedExam;
+                    return next;
+                  }
+                  return [savedExam, ...prev];
+                });
+              }}
+              onDeleteExam={(examId) => {
+                setExams((prev) => prev.filter((e) => e.id !== examId));
+                setSubmissions((prev) => prev.filter((s) => s.examId !== examId));
+              }}
               onPreviewExam={(exam) => {
                 setActiveSessionExam(exam);
               }}
@@ -172,8 +198,13 @@ export default function App() {
       </div>
 
       {/* Global Footer */}
-      <footer className="border-t-2 border-slate-200 bg-white/90 backdrop-blur-xs py-6 text-center text-xs font-bold text-slate-500 relative z-10">
-        منظومة الاختبارات التفاعلية الذكية • قاعدة بيانات سحابية متزامنة بالكامل • تصميم احترافي
+      <footer className="border-t-2 border-slate-200 bg-white/95 backdrop-blur-xs py-5 px-4 text-center text-xs font-bold text-slate-500 relative z-10 flex flex-wrap items-center justify-center gap-3">
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-black">
+          <span className="w-2 h-2 rounded-full bg-[#58cc02] animate-pulse" />
+          قاعدة بيانات Firebase متصلة سحابياً (مشروع exam-65429)
+        </span>
+        <span className="text-slate-300">•</span>
+        <span>منظومة الاختبارات التفاعلية الذكية</span>
       </footer>
     </div>
   );
