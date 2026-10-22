@@ -1,0 +1,107 @@
+@import "tailwindcss";
+
+@layer utilities {
+  /* Duolingo 3D Button Styles */
+  .duo-btn-green {
+    background-color: #58cc02;
+    border-color: #46a302;
+    color: #ffffff;
+    box-shadow: 0 4px 0 #46a302;
+    transition: all 0.1s ease;
+  }
+  .duo-btn-green:hover:not(:disabled) {
+    background-color: #61e002;
+  }
+  .duo-btn-green:active:not(:disabled) {
+    box-shadow: 0 0 0 #46a302;
+    transform: translateY(4px);
+  }
+
+  .duo-btn-blue {
+    background-color: #1cb0f6;
+    border-color: #1899d6;
+    color: #ffffff;
+    box-shadow: 0 4px 0 #1899d6;
+    transition: all 0.1s ease;
+  }
+  .duo-btn-blue:hover:not(:disabled) {
+    background-color: #2fc0ff;
+  }
+  .duo-btn-blue:active:not(:disabled) {
+    box-shadow: 0 0 0 #1899d6;
+    transform: translateY(4px);
+  }
+
+  .duo-btn-yellow {
+    background-color: #ffc800;
+    border-color: #e5b300;
+    color: #4b4b4b;
+    box-shadow: 0 4px 0 #cf9e00;
+    transition: all 0.1s ease;
+  }
+  .duo-btn-yellow:hover:not(:disabled) {
+    background-color: #ffd226;
+  }
+  .duo-btn-yellow:active:not(:disabled) {
+    box-shadow: 0 0 0 #cf9e00;
+    transform: translateY(4px);
+  }
+
+  .duo-btn-red {
+    background-color: #ff4b4b;
+    border-color: #d33131;
+    color: #ffffff;
+    box-shadow: 0 4px 0 #ba2323;
+    transition: all 0.1s ease;
+  }
+  .duo-btn-red:hover:not(:disabled) {
+    background-color: #ff5f5f;
+  }
+  .duo-btn-red:active:not(:disabled) {
+    box-shadow: 0 0 0 #ba2323;
+    transform: translateY(4px);
+  }
+
+  .duo-btn-outline {
+    background-color: #ffffff;
+    border-color: #e5e5e5;
+    color: #4b4b4b;
+    box-shadow: 0 3px 0 #d0d0d0;
+    transition: all 0.1s ease;
+  }
+  .duo-btn-outline:hover:not(:disabled) {
+    background-color: #f7f7f7;
+  }
+  .duo-btn-outline:active:not(:disabled) {
+    box-shadow: 0 0 0 #d0d0d0;
+    transform: translateY(3px);
+  }
+
+  .duo-card {
+    background-color: #ffffff;
+    border: 2px solid #e5e7eb;
+    border-bottom-width: 4px;
+    border-radius: 1.25rem;
+  }
+
+  .duo-card-active {
+    border-color: #58cc02;
+    background-color: #f2fcf0;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}

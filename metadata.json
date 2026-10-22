@@ -1,0 +1,6 @@
+{
+  "name": "Duolingo Exam Studio",
+  "description": "منصة اختبارات تفاعلية مستوحاة من أسلوب وتصميم دولينجو مع إدارة شاملة للامتحانات والمختبرين",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
