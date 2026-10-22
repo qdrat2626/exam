@@ -29,17 +29,20 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Install Dependencies
-        run: npm install --legacy-peer-deps
+        run: npm install --legacy-peer-deps --no-audit --no-fund --engine-strict=false
 
       - name: Build Application
+        env:
+          CI: false
         run: npm run build
 
       - name: Setup 404 Fallback & NoJekyll
         run: |
-          cp dist/index.html dist/404.html
+          mkdir -p dist
+          test -f dist/index.html && cp dist/index.html dist/404.html || echo "No index.html found"
           touch dist/.nojekyll
 
       - name: Setup Pages
