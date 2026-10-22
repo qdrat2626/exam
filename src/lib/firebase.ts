@@ -1,10 +1,10 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
+import { getAnalytics } from 'firebase/analytics';
 import {
   getFirestore,
   collection,
   doc,
   getDocs,
-  getDoc,
   setDoc,
   updateDoc,
   deleteDoc,
@@ -15,7 +15,7 @@ import {
 import { User, Exam, Submission, UserRole } from '../types';
 import { normalizeArabic, isDefaultSupervisor, SAMPLE_EXAM_JSON } from './utils';
 
-// User's provided Firebase configuration
+// Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyDQNqDXPgIEEySwHBnLnOb2BtlzdW6wqIE",
   authDomain: "exam-65429.firebaseapp.com",
@@ -26,33 +26,12 @@ const firebaseConfig = {
   measurementId: "G-JRNZCDZYD0"
 };
 
-// Initialize Firebase safely
+// Initialize Firebase
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 export const db = getFirestore(app);
+export const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
 
-// Local cache keys for offline & backup persistence
-const CACHE_USERS_KEY = 'duo_cached_users';
-const CACHE_EXAMS_KEY = 'duo_cached_exams';
-const CACHE_SUBMISSIONS_KEY = 'duo_cached_submissions';
-
-function getLocal<T>(key: string, defaultValue: T): T {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : defaultValue;
-  } catch {
-    return defaultValue;
-  }
-}
-
-function setLocal<T>(key: string, value: T) {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    // Storage quota or disabled
-  }
-}
-
-// Initial seed for default demo exam if none exists
+// Initial seed for default demo exam if none exists in Firestore
 const defaultStarterExam: Exam = {
   id: 'starter_exam_01',
   title: SAMPLE_EXAM_JSON.title,
@@ -73,66 +52,35 @@ const defaultStarterExam: Exam = {
 };
 
 /**
- * Find or create a user by full 4-part name
+ * Find or create a user by full 4-part name directly in Firestore (full cloud sync, zero local storage)
  */
 export async function findOrCreateUser(fullName: string): Promise<{ user: User; isNew: boolean }> {
   const cleanName = fullName.trim();
   const normalized = normalizeArabic(cleanName);
   const now = new Date().toISOString();
-
-  // Check if this is the default supervisor
   const isSupervisor = isDefaultSupervisor(cleanName);
 
-  // 1. Try checking Firestore
-  try {
-    const usersCol = collection(db, 'users');
-    const q = query(usersCol, where('normalizedName', '==', normalized));
-    const snapshot = await getDocs(q);
+  const usersCol = collection(db, 'users');
+  const q = query(usersCol, where('normalizedName', '==', normalized));
+  const snapshot = await getDocs(q);
 
-    if (!snapshot.empty) {
-      const docData = snapshot.docs[0].data() as User;
-      const userDocRef = doc(db, 'users', snapshot.docs[0].id);
+  if (!snapshot.empty) {
+    const docData = snapshot.docs[0].data() as User;
+    const userDocRef = doc(db, 'users', snapshot.docs[0].id);
+    const effectiveRole: UserRole = isSupervisor || docData.role === 'admin' ? 'admin' : 'student';
 
-      // If matches supervisor name or already admin, maintain admin role
-      const effectiveRole: UserRole = isSupervisor || docData.role === 'admin' ? 'admin' : 'student';
+    const updatedUser: User = {
+      ...docData,
+      id: snapshot.docs[0].id,
+      role: effectiveRole,
+      lastLoginAt: now
+    };
 
-      const updatedUser: User = {
-        ...docData,
-        id: snapshot.docs[0].id,
-        role: effectiveRole,
-        lastLoginAt: now
-      };
-
-      try {
-        await updateDoc(userDocRef, { lastLoginAt: now, role: effectiveRole });
-      } catch {
-        // silent
-      }
-
-      // Update local cache
-      const cached = getLocal<User[]>(CACHE_USERS_KEY, []);
-      const idx = cached.findIndex(u => u.id === updatedUser.id);
-      if (idx >= 0) cached[idx] = updatedUser;
-      else cached.push(updatedUser);
-      setLocal(CACHE_USERS_KEY, cached);
-
-      return { user: updatedUser, isNew: false };
-    }
-  } catch (err) {
-    console.warn('Firestore query failed, using local cache fallback', err);
+    await updateDoc(userDocRef, { lastLoginAt: now, role: effectiveRole });
+    return { user: updatedUser, isNew: false };
   }
 
-  // 2. Fallback check local cache
-  const cachedUsers = getLocal<User[]>(CACHE_USERS_KEY, []);
-  const cachedMatch = cachedUsers.find(u => u.normalizedName === normalized);
-  if (cachedMatch) {
-    cachedMatch.lastLoginAt = now;
-    if (isSupervisor) cachedMatch.role = 'admin';
-    setLocal(CACHE_USERS_KEY, cachedUsers);
-    return { user: cachedMatch, isNew: false };
-  }
-
-  // 3. New user creation
+  // Create new user in Firestore
   const newUserId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
   const newUser: User = {
     id: newUserId,
@@ -143,37 +91,19 @@ export async function findOrCreateUser(fullName: string): Promise<{ user: User; 
     lastLoginAt: now
   };
 
-  try {
-    await setDoc(doc(db, 'users', newUserId), newUser);
-  } catch (err) {
-    console.warn('Firestore write failed, saved to local cache', err);
-  }
-
-  cachedUsers.push(newUser);
-  setLocal(CACHE_USERS_KEY, cachedUsers);
-
+  await setDoc(doc(db, 'users', newUserId), newUser);
   return { user: newUser, isNew: true };
 }
 
 /**
- * Fetch all registered users
+ * Fetch all registered users directly from Firestore
  */
 export async function getAllUsers(): Promise<User[]> {
-  const localUsers = getLocal<User[]>(CACHE_USERS_KEY, []);
-  try {
-    const snap = await getDocs(collection(db, 'users'));
-    if (!snap.empty) {
-      const users: User[] = [];
-      snap.forEach(d => users.push(d.data() as User));
-      setLocal(CACHE_USERS_KEY, users);
-      return users;
-    }
-  } catch (err) {
-    console.warn('Failed to fetch users from Firestore, using cache', err);
-  }
+  const snap = await getDocs(collection(db, 'users'));
+  const users: User[] = [];
+  snap.forEach(d => users.push(d.data() as User));
 
-  // If local empty, seed supervisor
-  if (localUsers.length === 0) {
+  if (users.length === 0) {
     const supervisor: User = {
       id: 'admin_root',
       fullName: 'محمد منتصر محمد يونس',
@@ -182,14 +112,15 @@ export async function getAllUsers(): Promise<User[]> {
       createdAt: new Date().toISOString(),
       lastLoginAt: new Date().toISOString()
     };
-    localUsers.push(supervisor);
-    setLocal(CACHE_USERS_KEY, localUsers);
+    await setDoc(doc(db, 'users', supervisor.id), supervisor);
+    users.push(supervisor);
   }
-  return localUsers;
+
+  return users;
 }
 
 /**
- * Admin: Add new user directly
+ * Admin: Add new user directly to Firestore
  */
 export async function createUserByAdmin(fullName: string, role: UserRole): Promise<User> {
   const cleanName = fullName.trim();
@@ -206,73 +137,39 @@ export async function createUserByAdmin(fullName: string, role: UserRole): Promi
     lastLoginAt: now
   };
 
-  try {
-    await setDoc(doc(db, 'users', userId), newUser);
-  } catch (err) {
-    console.warn('Firestore create user error', err);
-  }
-
-  const cached = getLocal<User[]>(CACHE_USERS_KEY, []);
-  cached.push(newUser);
-  setLocal(CACHE_USERS_KEY, cached);
-
+  await setDoc(doc(db, 'users', userId), newUser);
   return newUser;
 }
 
 /**
- * Admin: Update user role (promote to admin or demote to student)
+ * Admin: Update user role in Firestore
  */
 export async function updateUserRole(userId: string, newRole: UserRole): Promise<void> {
-  try {
-    await updateDoc(doc(db, 'users', userId), { role: newRole });
-  } catch (err) {
-    console.warn('Firestore update role error', err);
-  }
-
-  const cached = getLocal<User[]>(CACHE_USERS_KEY, []);
-  const user = cached.find(u => u.id === userId);
-  if (user) {
-    user.role = newRole;
-    setLocal(CACHE_USERS_KEY, cached);
-  }
+  await updateDoc(doc(db, 'users', userId), { role: newRole });
 }
 
-const SEEDED_KEY = 'duo_starter_seeded_flag';
-
 /**
- * Fetch all exams
+ * Fetch all exams directly from Firestore
  */
 export async function getExams(): Promise<Exam[]> {
-  try {
-    const snap = await getDocs(collection(db, 'exams'));
-    if (!snap.empty) {
-      const exams: Exam[] = [];
-      snap.forEach(d => exams.push(d.data() as Exam));
-      setLocal(CACHE_EXAMS_KEY, exams);
-      return exams;
-    }
-  } catch (err) {
-    console.warn('Firestore get exams error', err);
+  const snap = await getDocs(collection(db, 'exams'));
+  const exams: Exam[] = [];
+  snap.forEach(d => exams.push(d.data() as Exam));
+
+  if (exams.length === 0) {
+    await setDoc(doc(db, 'exams', defaultStarterExam.id), defaultStarterExam);
+    exams.push(defaultStarterExam);
   }
 
-  let local = getLocal<Exam[]>(CACHE_EXAMS_KEY, []);
-  const alreadySeeded = localStorage.getItem(SEEDED_KEY);
-
-  if (local.length === 0 && !alreadySeeded) {
-    local = [defaultStarterExam];
-    setLocal(CACHE_EXAMS_KEY, local);
-    localStorage.setItem(SEEDED_KEY, 'true');
-  }
-  return local;
+  return exams;
 }
 
 /**
- * Save or update exam
+ * Save or update exam directly in Firestore
  */
 export async function saveExam(examData: Omit<Exam, 'id' | 'createdAt'> & { id?: string }): Promise<Exam> {
   const examId = examData.id || `exam_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
   const now = new Date().toISOString();
-
   const totalPoints = examData.questions.reduce((sum, q) => sum + (q.points || 0), 0);
 
   const fullExam: Exam = {
@@ -283,86 +180,40 @@ export async function saveExam(examData: Omit<Exam, 'id' | 'createdAt'> & { id?:
     isActive: examData.isActive !== undefined ? examData.isActive : true
   };
 
-  try {
-    await setDoc(doc(db, 'exams', examId), fullExam);
-  } catch (err) {
-    console.warn('Firestore save exam error', err);
-  }
-
-  const cached = getLocal<Exam[]>(CACHE_EXAMS_KEY, []);
-  const idx = cached.findIndex(e => e.id === examId);
-  if (idx >= 0) cached[idx] = fullExam;
-  else cached.unshift(fullExam);
-  setLocal(CACHE_EXAMS_KEY, cached);
-
+  await setDoc(doc(db, 'exams', examId), fullExam);
   return fullExam;
 }
 
 /**
- * Delete an exam
+ * Delete an exam from Firestore
  */
 export async function deleteExam(examId: string): Promise<void> {
-  // Ensure seed flag is set so default starter exam does not resurrect
-  localStorage.setItem(SEEDED_KEY, 'true');
-
-  try {
-    await deleteDoc(doc(db, 'exams', examId));
-  } catch (err) {
-    console.warn('Firestore delete exam error', err);
-  }
-
-  const cached = getLocal<Exam[]>(CACHE_EXAMS_KEY, []).filter(e => e.id !== examId);
-  setLocal(CACHE_EXAMS_KEY, cached);
+  await deleteDoc(doc(db, 'exams', examId));
 }
 
 /**
- * Delete a user
+ * Delete a user from Firestore
  */
 export async function deleteUser(userId: string): Promise<void> {
-  try {
-    await deleteDoc(doc(db, 'users', userId));
-  } catch (err) {
-    console.warn('Firestore delete user error', err);
-  }
-
-  const cached = getLocal<User[]>(CACHE_USERS_KEY, []).filter(u => u.id !== userId);
-  setLocal(CACHE_USERS_KEY, cached);
+  await deleteDoc(doc(db, 'users', userId));
 }
 
 /**
- * Delete a submission
+ * Delete a submission from Firestore
  */
 export async function deleteSubmission(submissionId: string): Promise<void> {
-  try {
-    await deleteDoc(doc(db, 'submissions', submissionId));
-  } catch (err) {
-    console.warn('Firestore delete submission error', err);
-  }
-
-  const cached = getLocal<Submission[]>(CACHE_SUBMISSIONS_KEY, []).filter(s => s.id !== submissionId);
-  setLocal(CACHE_SUBMISSIONS_KEY, cached);
+  await deleteDoc(doc(db, 'submissions', submissionId));
 }
 
 /**
- * Toggle exam active status
+ * Toggle exam active status in Firestore
  */
 export async function toggleExamActive(examId: string, isActive: boolean): Promise<void> {
-  try {
-    await updateDoc(doc(db, 'exams', examId), { isActive });
-  } catch (err) {
-    console.warn('Firestore toggle active error', err);
-  }
-
-  const cached = getLocal<Exam[]>(CACHE_EXAMS_KEY, []);
-  const exam = cached.find(e => e.id === examId);
-  if (exam) {
-    exam.isActive = isActive;
-    setLocal(CACHE_EXAMS_KEY, cached);
-  }
+  await updateDoc(doc(db, 'exams', examId), { isActive });
 }
 
 /**
- * Submit exam result
+ * Submit exam result directly to Firestore
  */
 export async function submitExamAttempt(
   submissionData: Omit<Submission, 'id' | 'submittedAt'>
@@ -376,74 +227,38 @@ export async function submitExamAttempt(
     submittedAt: now
   };
 
-  try {
-    await setDoc(doc(db, 'submissions', id), fullSubmission);
-  } catch (err) {
-    console.warn('Firestore submission save error', err);
-  }
-
-  const cached = getLocal<Submission[]>(CACHE_SUBMISSIONS_KEY, []);
-  cached.unshift(fullSubmission);
-  setLocal(CACHE_SUBMISSIONS_KEY, cached);
-
+  await setDoc(doc(db, 'submissions', id), fullSubmission);
   return fullSubmission;
 }
 
 /**
- * Get all submissions or for a specific exam
+ * Get submissions for an exam from Firestore
  */
 export async function getSubmissionsForExam(examId: string): Promise<Submission[]> {
-  try {
-    const q = query(collection(db, 'submissions'), where('examId', '==', examId), orderBy('submittedAt', 'desc'));
-    const snap = await getDocs(q);
-    if (!snap.empty) {
-      const subs: Submission[] = [];
-      snap.forEach(d => subs.push(d.data() as Submission));
-      return subs;
-    }
-  } catch (err) {
-    console.warn('Firestore query submissions error, checking local', err);
-  }
-
-  const cached = getLocal<Submission[]>(CACHE_SUBMISSIONS_KEY, []);
-  return cached.filter(s => s.examId === examId);
+  const q = query(collection(db, 'submissions'), where('examId', '==', examId), orderBy('submittedAt', 'desc'));
+  const snap = await getDocs(q);
+  const subs: Submission[] = [];
+  snap.forEach(d => subs.push(d.data() as Submission));
+  return subs;
 }
 
 /**
- * Get all submissions across all exams
+ * Get all submissions across all exams from Firestore
  */
 export async function getAllSubmissions(): Promise<Submission[]> {
-  try {
-    const snap = await getDocs(collection(db, 'submissions'));
-    if (!snap.empty) {
-      const subs: Submission[] = [];
-      snap.forEach(d => subs.push(d.data() as Submission));
-      setLocal(CACHE_SUBMISSIONS_KEY, subs);
-      return subs;
-    }
-  } catch (err) {
-    console.warn('Firestore get all submissions error', err);
-  }
-
-  return getLocal<Submission[]>(CACHE_SUBMISSIONS_KEY, []);
+  const snap = await getDocs(collection(db, 'submissions'));
+  const subs: Submission[] = [];
+  snap.forEach(d => subs.push(d.data() as Submission));
+  return subs;
 }
 
 /**
- * Get user's submissions
+ * Get user's submissions from Firestore
  */
 export async function getUserSubmissions(userId: string): Promise<Submission[]> {
-  try {
-    const q = query(collection(db, 'submissions'), where('userId', '==', userId));
-    const snap = await getDocs(q);
-    if (!snap.empty) {
-      const subs: Submission[] = [];
-      snap.forEach(d => subs.push(d.data() as Submission));
-      return subs;
-    }
-  } catch (err) {
-    console.warn('Firestore get user submissions error', err);
-  }
-
-  const cached = getLocal<Submission[]>(CACHE_SUBMISSIONS_KEY, []);
-  return cached.filter(s => s.userId === userId);
+  const q = query(collection(db, 'submissions'), where('userId', '==', userId));
+  const snap = await getDocs(q);
+  const subs: Submission[] = [];
+  snap.forEach(d => subs.push(d.data() as Submission));
+  return subs;
 }
