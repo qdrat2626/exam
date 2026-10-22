@@ -2,11 +2,10 @@ import React, { useState } from 'react';
 import { findOrCreateUser } from '../lib/firebase';
 import { User } from '../types';
 import { soundFX } from '../lib/audio';
-import { isValidQuadName, SUPERVISOR_EXACT_NAME, fireDuolingoConfetti } from '../lib/utils';
+import { isValidQuadName, fireDuolingoConfetti } from '../lib/utils';
 import { LivingBackground } from './LivingBackground';
 import {
   GraduationCap,
-  Shield,
   UserPlus,
   LogIn,
   AlertCircle,
@@ -68,12 +67,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess }) => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleFillSupervisor = () => {
-    soundFX.playPop();
-    setFullName(SUPERVISOR_EXACT_NAME);
-    setErrorMessage(null);
   };
 
   return (
@@ -196,19 +189,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess }) => {
               )}
             </button>
           </form>
-
-          {/* Supervisor Quick Access Helper */}
-          <div className="mt-6 pt-5 border-t-2 border-slate-100 text-center">
-            <p className="text-xs font-bold text-slate-400 mb-2">تسجيل دخول المشرف الافتراضي:</p>
-            <button
-              type="button"
-              onClick={handleFillSupervisor}
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-50 hover:bg-amber-100/80 border-2 border-b-4 border-[#ff9600] text-[#cc7800] text-xs font-black transition-all cursor-pointer"
-            >
-              <Shield className="w-4 h-4 stroke-[2.5]" />
-              <span>دخول باسم: {SUPERVISOR_EXACT_NAME} (المشرف)</span>
-            </button>
-          </div>
         </div>
       </div>
 
